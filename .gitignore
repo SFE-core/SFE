@@ -1,0 +1,19 @@
+# Python
+sfe.egg-info/
+__pycache__/
+*.pyc
+*.pyo
+.eggs/
+
+# Virtual environment
+venv/
+env/
+
+# SFE outputs
+outputs/
+README.md
+sampledata.csv
+
+# OS
+.DS_Store
+Thumbs.db
