@@ -59,24 +59,38 @@ from .core import OPERATING_ENVELOPE
 __all__ = ["LLMConfig", "InterpretationResult", "interpret", "build_prompt"]
 
 # ---------------------------------------------------------------------------
-# Domain context — one line fed to the LLM so it frames language correctly
+# Domain context
 # ---------------------------------------------------------------------------
 
 _DOMAIN_CONTEXT = {
     "finance": (
         "Data are log-returns of financial instruments. "
         "Coupling reflects shared market structure. "
-        "Non-stationarity often indicates regime transitions or crisis events."
+        "Non-stationarity often indicates regime transitions or crisis events. "
+        "Band gap is the critical crisis-type discriminator: "
+        "Branch A (acute homogeneous, e.g. COVID crash) shows band gap ≥1.5× background; "
+        "Branch B (heterogeneous contagion, e.g. 2008 Lehman) shows stable/declining band gap "
+        "with reff collapse and drho elevation. "
+        "Gradual corrections (e.g. dot-com 2000-02) show neither branch firing."
     ),
     "eeg": (
         "Data are EEG biosignals from electrode pairs. "
         "Coupling reflects neural synchrony between brain regions. "
-        "Event-locked dρ drops indicate task-driven channel stabilization."
+        "Event-locked dρ drops indicate task-driven channel stabilization. "
+        "Two-phase structure: dρ spikes at stimulus onset (transition), "
+        "then drops below baseline (re-lock). Lead time = dρ trough - ρ* peak."
     ),
     "traffic": (
         "Data are sensor readings from a physical network (traffic, power, temperature). "
         "Coupling reflects shared physical dynamics. "
-        "High r_eff indicates the network has not collapsed to a single shared mode."
+        "High r_eff indicates the network has not collapsed to a single shared mode. "
+        "Band gap reflects the dominant mode strength relative to background."
+    ),
+    "strain": (
+        "Data are strain rosette sensor channels from a structural health monitoring array. "
+        "Within-device coupling reflects geometric constraints of the rosette; "
+        "cross-device coupling reflects structural load propagation. "
+        "Band gap > 3× indicates a single dominant stress mode."
     ),
 }
 
@@ -122,7 +136,8 @@ class LLMConfig:
 # Prompt builder — pure function, no I/O
 # ---------------------------------------------------------------------------
 
-def build_prompt(result: SFEResult, domain: str = "unknown") -> str:
+def build_prompt(result: SFEResult, domain: str = "unknown",
+                 extra_context: str | None = None) -> str:
     """
     Build the interpretation prompt from a SFEResult.
 
@@ -130,8 +145,10 @@ def build_prompt(result: SFEResult, domain: str = "unknown") -> str:
 
     Parameters
     ----------
-    result : SFEResult
-    domain : str   "finance" | "eeg" | "traffic" | any string
+    result        : SFEResult
+    domain        : str   "finance" | "eeg" | "traffic" | "strain" | any string
+    extra_context : str   optional additional context appended after domain context
+                          (e.g. crisis window dates, comparison period, regime verdict)
 
     Returns
     -------
@@ -140,6 +157,9 @@ def build_prompt(result: SFEResult, domain: str = "unknown") -> str:
     s   = result.summary_dict()
     env = OPERATING_ENVELOPE
     ctx = _DOMAIN_CONTEXT.get(domain.lower(), _DOMAIN_FALLBACK)
+
+    if extra_context:
+        ctx = ctx + "\n  " + extra_context.strip()
 
     # Pair table
     header = f"  {'Pair':<20} {'ρ*':>6} {'dρ':>10} {'r_eff':>7} {'NS%':>6}"
@@ -163,6 +183,11 @@ def build_prompt(result: SFEResult, domain: str = "unknown") -> str:
             f"columns dropped: {result.quality.columns_dropped or 'none'}."
         )
 
+    # Regime hint for finance domain
+    regime_hint = ""
+    if domain.lower() == "finance":
+        regime_hint = _finance_regime_hint(s)
+
     prompt = f"""You are interpreting output from the SFE instrument, which measures coupling structure in multivariate time series using rolling correlation geometry.
 
 Domain context:
@@ -176,7 +201,13 @@ Instrument definitions:
   r_eff  = effective rank of the pair (1 = fully rank-collapsed, 2 = independent)
   NS%    = percentage of non-overlapping blocks where correlation variance
            is non-stationary (self-detected without external ground truth)
-  r_eff joint = entropy-based effective dimensionality across all N observers
+  r_eff joint     = entropy-based effective dimensionality across all N observers
+  r_eff corrected = r_eff joint × f(N) finite-sample correction; f(N) = -0.106·ln(N)+1.070
+                    reliable for N=2–10; use with caution for N>10
+  band gap (λ₁/λ₂) = ratio of largest to second eigenvalue of global covariance
+                    Crisis type discriminator (Prop. 12):
+                    Branch A fires if band gap ≥ 1.5× background (acute homogeneous crisis)
+                    Branch B fires without band gap explosion (heterogeneous contagion)
 
 Operating envelope:
   Reliable zone : ρ* > {env['reliable_rho_min']} and dρ near 0
@@ -192,7 +223,9 @@ Instrument output:
   ρ* mean        : {s['rho_star_mean']:.4f}
   ρ* max         : {s['rho_star_max']:.4f}
   dρ mean        : {s['drho_mean']:.6f}
-  r_eff joint    : {s['reff_joint_mean']:.4f}{quality_notes}
+  r_eff joint    : {s['reff_joint_mean']:.4f}
+  r_eff corrected: {s['reff_corr']:.4f}
+  band gap λ₁/λ₂ : {s['band_gap']:.3f}×{quality_notes}{regime_hint}
 
 Pair table:
 {pair_table}
@@ -202,9 +235,41 @@ Answer the following. Be concise and technical. Do not restate definitions.
 1. What is the dominant coupling regime across this dataset?
 2. Which pairs are structurally reliable and which are unstable? Why?
 3. Is W={s['W']} appropriate for this domain and T={s['T']}? Suggest an adjustment if needed.
-4. What should the analyst investigate next based on these numbers?"""
+4. What does the band gap ({s['band_gap']:.3f}×) and r_eff corrected ({s['reff_corr']:.4f}) indicate about the system's dimensionality?
+5. What should the analyst investigate next based on these numbers?"""
 
     return prompt
+
+
+def _finance_regime_hint(s: dict) -> str:
+    """
+    Generate a regime pre-assessment string for the finance domain.
+    Based strictly on Proposition 12 thresholds from the paper.
+    Does NOT fire on gradual corrections — only on acute synchronization events.
+    """
+    bg    = s.get("band_gap", float("nan"))
+    rc    = s.get("reff_corr", float("nan"))
+    rho   = s.get("rho_star_mean", float("nan"))
+    drho  = s.get("drho_mean", float("nan"))
+
+    # Cannot assess without both numbers
+    if any(np.isnan(v) for v in [bg, rc, rho, drho]):
+        return ""
+
+    notes = []
+    if bg >= 10.0:
+        notes.append(f"band gap={bg:.1f}× is very high — consistent with acute homogeneous shock (Branch A territory)")
+    elif bg >= 3.0:
+        notes.append(f"band gap={bg:.1f}× is elevated — one dominant mode capturing most variance")
+    else:
+        notes.append(f"band gap={bg:.1f}× is moderate — variance distributed across modes (Branch B or background)")
+
+    if rc < 1.5:
+        notes.append(f"r_eff corrected={rc:.3f} indicates near rank-collapse")
+    elif rc > 3.0:
+        notes.append(f"r_eff corrected={rc:.3f} indicates multiple independent modes")
+
+    return "\n  Finance regime notes: " + "; ".join(notes) + "."
 
 
 # ---------------------------------------------------------------------------
@@ -278,6 +343,7 @@ def interpret(
     result: SFEResult,
     domain: str = "unknown",
     config: LLMConfig | None = None,
+    extra_context: str | None = None,
     save_to=None,
 ) -> InterpretationResult:
     """
@@ -288,10 +354,11 @@ def interpret(
 
     Privacy note
     ------------
-    Only derived metrics are sent to the API — ρ*, dρ, r_eff, NS%, and
-    aggregate statistics. Raw data, prices, and returns never leave your
-    machine. Column labels (ticker names, channel names) are included in
-    the prompt; pass anonymous labels to the connector if that is a concern.
+    Only derived metrics are sent to the API — ρ*, dρ, r_eff, NS%, band_gap,
+    reff_corr, and aggregate statistics. Raw data, prices, and returns never
+    leave your machine. Column labels (ticker names, channel names) are
+    included in the prompt; pass anonymous labels to the connector if that
+    is a concern.
 
     To keep everything local, use Ollama:
         LLMConfig(api_key="ollama", model="llama3",
@@ -299,12 +366,15 @@ def interpret(
 
     Parameters
     ----------
-    result  : SFEResult
-    domain  : str          "finance" | "eeg" | "traffic" | any string
-    config  : LLMConfig    provider config. Defaults to Anthropic claude-sonnet-4-6.
-                           API key read from SFE_LLM_API_KEY if not set in config.
-    save_to : RunFolder | Path | str | None
-              if provided, saves interpretation.txt automatically
+    result        : SFEResult
+    domain        : str          "finance" | "eeg" | "traffic" | "strain" | any string
+    config        : LLMConfig    provider config. Defaults to Anthropic claude-sonnet-4-6.
+                                 API key read from SFE_LLM_API_KEY if not set in config.
+    extra_context : str          optional additional context for the prompt
+                                 (e.g. "Crash window: 2020-02-01 to 2020-04-30.
+                                  Full-period band_gap was 7.11×.")
+    save_to       : RunFolder | Path | str | None
+                    if provided, saves interpretation.txt automatically
 
     Returns
     -------
@@ -336,7 +406,7 @@ def interpret(
         print(
             f"\n  [sfe.ai] Sending derived metrics to {cfg.base_url} "
             f"(model: {cfg.model}).\n"
-            f"  Only ρ*, dρ, r_eff, NS% and labels are included — "
+            f"  Only ρ*, dρ, r_eff, NS%, band_gap and labels are included — "
             f"not raw data.\n"
             f"  For a fully local run: LLMConfig(api_key='ollama', "
             f"model='llama3', base_url='http://localhost:11434/v1', "
@@ -349,7 +419,7 @@ def interpret(
             "or set the SFE_LLM_API_KEY environment variable."
         )
 
-    prompt = build_prompt(result, domain=domain)
+    prompt = build_prompt(result, domain=domain, extra_context=extra_context)
 
     client = OpenAI(
         api_key    = key,

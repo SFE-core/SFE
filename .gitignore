@@ -4,13 +4,14 @@ __pycache__/
 *.pyc
 *.pyo
 .eggs/
+build/
 
 # Virtual environment
 venv/
 env/
 
 # SFE outputs
-outputs/
+/
 README.md
 sampledata.csv
 

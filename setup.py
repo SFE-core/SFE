@@ -10,8 +10,8 @@ setup(
     license="MIT",
     packages=find_packages(),
     python_requires=">=3.9",
-    install_requires=["numpy>=1.23"],
-    extras_require={"dev": ["pytest", "pandas", "matplotlib", "scipy"]},
+    install_requires=["numpy>=1.23", "pandas", "matplotlib", "scipy"],
+    extras_require={"dev": ["pytest"]},
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

@@ -57,67 +57,87 @@ def _fig(nrows, ncols, figsize, title):
 
 
 # ---------------------------------------------------------------------------
+# Cross-domain reference anchors (validated paper values, SFE-11v4 Table)
+# Plotted as background stars on every phase portrait for context.
+# ---------------------------------------------------------------------------
+
+_CROSS_DOMAIN_REFS = [
+    # (rho_star,  drho,   color,     label)
+    (0.963, 0.004, "#ff6b35", "ETT HUFL-MUFL"),
+    (0.831, 0.004, "#c77dff", "EEG C3-C4"),
+    (0.426, 0.047, "#00b4d8", "METR-LA"),
+    (0.850, 0.005, "#00e676", "OU high-k"),
+    (0.450, 0.020, "#ffd54f", "OU mid-k"),
+    (0.180, 0.054, "#bdbdbd", "OU low-k"),
+]
+
+
+# ---------------------------------------------------------------------------
 # Fig 1 — Phase portrait
 # ---------------------------------------------------------------------------
 
 def phase_portrait(result, title: str | None = None) -> "Figure":
     """
-    ρ* vs dρ scatter for all pairs.
-    Operating envelope zones drawn as background regions.
+    ρ* vs dρ scatter for all pairs, with cross-domain reference anchors.
 
-    Parameters
-    ----------
-    result : SFEResult
-    title  : str, optional
-
-    Returns
-    -------
-    matplotlib Figure
+    Background stars show validated paper values for ETT, EEG, METR-LA
+    and the three OU calibration points, giving context for where the
+    live data sits in the operating envelope.
     """
     import matplotlib.pyplot as plt
-    import matplotlib.patches as mpatches
     from .core import OPERATING_ENVELOPE
 
     env    = OPERATING_ENVELOPE
     rmin   = env["reliable_rho_min"]
     dmax   = env["degraded_rho_max"]
 
-    title  = title or "SFE Phase Portrait — ρ* vs dρ"
-    fig, ax = plt.subplots(figsize=(8, 6), facecolor=_BG)
+    s      = result.summary_dict()
+    bg_str = f"λ₁/λ₂={s['band_gap']:.2f}×   r_eff corr={s['reff_corr']:.3f}"
+    title  = title or f"SFE — Phase Portrait   |   {bg_str}"
+
+    fig, ax = plt.subplots(figsize=(9, 6), facecolor=_BG)
     _style_ax(ax)
 
-    # Zone backgrounds
+    # Zone backgrounds — always drawn over full [0,1] x range
     ax.axvspan(rmin, 1.05, color="#1a3a1a", alpha=0.35, zorder=0)
     ax.axvspan(-0.05, dmax, color="#3a1a1a", alpha=0.25, zorder=0)
-    ax.axvline(rmin, color="#38b000", lw=1.0, ls="--", alpha=0.6)
-    ax.axvline(dmax, color="#ff4444", lw=1.0, ls="--", alpha=0.4)
+    ax.axvline(rmin, color="#ffd54f", lw=0.8, ls="--", alpha=0.6)
+    ax.axvline(dmax, color="#aaaaaa", lw=0.8, ls="--", alpha=0.4)
 
-    # Pairs
-    for k, p in enumerate(result.pairs):
-        color  = _COLORS[k % len(_COLORS)]
-        marker = "o" if p["zone"] == "reliable" else \
-                 "x" if p["zone"] == "degraded" else "^"
-        ax.scatter(p["rho_star"], p["drho_mean"],
-                   color=color, marker=marker, s=90,
-                   zorder=3, edgecolors="#222", lw=0.5,
-                   label=p["label"])
-        ax.annotate(p["label"], (p["rho_star"], p["drho_mean"]),
-                    textcoords="offset points", xytext=(6, 4),
-                    fontsize=7, color=color, alpha=0.85)
-
-    # Legend patches for zones
-    patches = [
-        mpatches.Patch(color="#1a3a1a", alpha=0.8, label=f"reliable (ρ*>{rmin})"),
-        mpatches.Patch(color="#3a1a1a", alpha=0.8, label=f"degraded (ρ*<{dmax})"),
-        mpatches.Patch(color="#2a2a1a", alpha=0.8, label="marginal"),
+    # Build legend handles explicitly — keeps zone lines + reference stars only
+    import matplotlib.lines as mlines
+    legend_handles = [
+        mlines.Line2D([], [], color="#ffd54f", lw=1.2, ls="--",
+                      label=f"reliable ρ*>{rmin}"),
+        mlines.Line2D([], [], color="#aaaaaa", lw=1.2, ls="--",
+                      label=f"degraded ρ*<{dmax}"),
     ]
-    ax.legend(handles=patches, fontsize=7, facecolor="#1a1a1a",
+
+    # Cross-domain reference stars
+    for rx, ry, rc, rl in _CROSS_DOMAIN_REFS:
+        ax.scatter(rx, ry, marker="*", s=130, color=rc, zorder=2)
+        legend_handles.append(
+            mlines.Line2D([], [], marker="*", color=rc, lw=0,
+                          markersize=9, label=rl)
+        )
+
+    # Live pairs (foreground) — filled circles, never in legend
+    for k, p in enumerate(result.pairs):
+        color = _COLORS[k % len(_COLORS)]
+        ax.scatter(p["rho_star"], p["drho_mean"],
+                   color=color, marker="o", s=60,
+                   zorder=4, alpha=0.85)
+
+    ax.legend(handles=legend_handles, fontsize=7, facecolor="#1a1a1a",
               labelcolor=_TEXT, loc="upper right")
+
+    # Let matplotlib auto-scale to fit both live data and reference stars naturally
+    # (matches Colab behaviour — no forced clamp)
+    ax.autoscale(enable=True)
+    ax.set_ylim(bottom=0)
 
     ax.set_xlabel("ρ* (mean absolute rolling correlation)")
     ax.set_ylabel("dρ (mean correlation variance)")
-    ax.set_xlim(-0.05, 1.05)
-    ax.set_ylim(bottom=0)
     ax.set_title(title, color=_WHITE, fontsize=9)
 
     fig.tight_layout()
@@ -132,16 +152,6 @@ def timeseries(result, title: str | None = None,
                max_pairs: int = 6) -> "Figure":
     """
     Rolling ρ and dρ over time for each pair (up to max_pairs).
-
-    Parameters
-    ----------
-    result    : SFEResult
-    title     : str, optional
-    max_pairs : int   max pairs to plot (default 6, sorted by ρ* desc)
-
-    Returns
-    -------
-    matplotlib Figure
     """
     pairs  = result.pairs[:max_pairs]
     n      = len(pairs)
@@ -151,13 +161,16 @@ def timeseries(result, title: str | None = None,
     if n == 1:
         axes = [axes]
 
+    W = result.W  # skip initialization transient (same as pair_table)
     for row, p in enumerate(pairs):
         ax_rho, ax_drho = axes[row]
         color = _COLORS[row % len(_COLORS)]
-        t     = np.arange(len(p["rho"]))
+        rho_  = p["rho"][W:]
+        drho_ = p["drho"][W:]
+        t     = np.arange(len(rho_))
 
         _style_ax(ax_rho)
-        ax_rho.plot(t, p["rho"], color=color, lw=0.8, alpha=0.9)
+        ax_rho.plot(t, rho_, color=color, lw=0.8, alpha=0.9)
         ax_rho.axhline(0.45,  color="#38b000", lw=0.8, ls="--", alpha=0.5)
         ax_rho.axhline(0.0,   color=_GRID, lw=0.5)
         ax_rho.axhline(-0.45, color="#38b000", lw=0.8, ls="--", alpha=0.5)
@@ -165,10 +178,14 @@ def timeseries(result, title: str | None = None,
         ax_rho.set_ylabel(f"{p['label']}\nρ", color=_TEXT, fontsize=8)
 
         _style_ax(ax_drho)
-        ax_drho.plot(t, p["drho"], color="#ffd60a", lw=0.8, alpha=0.9)
+        ax_drho.plot(t, drho_, color="#ffd60a", lw=0.8, alpha=0.9)
         ax_drho.axhline(p["drho_mean"], color=_TEXT, lw=0.8,
                         ls="--", alpha=0.5,
-                        label=f"mean={p['drho_mean']:.5f}")
+                        label=f"mean={p['drho_mean']:.6f}")
+        # Scale y to 99th percentile — prevents single spikes from collapsing the view
+        drho_p99 = float(np.nanpercentile(drho_, 99)) if len(drho_) else p["drho_mean"]
+        pad = max(drho_p99 * 0.20, 1e-7)
+        ax_drho.set_ylim(0, drho_p99 + pad)
         ax_drho.set_ylabel("dρ", color=_TEXT, fontsize=8)
         ax_drho.legend(fontsize=7, facecolor="#1a1a1a", labelcolor=_TEXT)
 
@@ -187,18 +204,16 @@ def eigenspectrum(result, title: str | None = None) -> "Figure":
     """
     Eigenvalue spectrum of the global covariance + r_eff joint trajectory.
 
-    Parameters
-    ----------
-    result : SFEResult
-    title  : str, optional
-
-    Returns
-    -------
-    matplotlib Figure
+    The band gap (λ₁/λ₂) is annotated on the bar chart and stored
+    as fig.sfe_band_gap for downstream use.
     """
     import matplotlib.pyplot as plt
 
-    title = title or "SFE Eigenspectrum & r_eff Joint"
+    s     = result.summary_dict()
+    bg    = s["band_gap"]
+    rc    = s["reff_corr"]
+    title = title or f"SFE Eigenspectrum & r_eff Joint   |   λ₁/λ₂={bg:.2f}×   r_eff corr={rc:.3f}"
+
     fig, (ax_spec, ax_reff) = plt.subplots(1, 2, figsize=(12, 5), facecolor=_BG)
     _style_ax(ax_spec)
     _style_ax(ax_reff)
@@ -221,7 +236,6 @@ def eigenspectrum(result, title: str | None = None) -> "Figure":
                      ha="center", color=_TEXT, fontsize=7)
 
     if N > 1:
-        bg = ev[0] / ev[1] if ev[1] > 1e-12 else float("nan")
         ax_spec.text(1, evn[0] * 100 + 1.5,
                      f"λ₁/λ₂={bg:.2f}×",
                      color="#ff6b35", fontsize=9, ha="center")
@@ -239,13 +253,20 @@ def eigenspectrum(result, title: str | None = None) -> "Figure":
     ax_reff.axhline(float(N), color=_TEXT, lw=1, ls="--",
                     alpha=0.4, label=f"r_eff={N} (isotropic)")
     ax_reff.axhline(np.nanmean(rj), color="#ffd60a", lw=1, ls=":",
-                    alpha=0.7, label=f"mean={np.nanmean(rj):.3f}")
+                    alpha=0.7, label=f"joint mean={np.nanmean(rj):.3f}")
+    ax_reff.axhline(rc, color="#c77dff", lw=1, ls=":",
+                    alpha=0.7, label=f"corrected={rc:.3f}")
     ax_reff.set_xlabel("window block")
     ax_reff.set_ylabel("r_eff joint")
     ax_reff.set_title("r_eff joint trajectory", color=_WHITE, fontsize=9)
     ax_reff.legend(fontsize=7, facecolor="#1a1a1a", labelcolor=_TEXT)
 
     fig.tight_layout()
+
+    # Store for downstream access without recomputing
+    fig.sfe_band_gap  = bg
+    fig.sfe_reff_corr = rc
+
     return fig
 
 

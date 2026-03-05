@@ -8,7 +8,8 @@ from __future__ import annotations
 import numpy as np
 __all__ = [
     "rolling_corr", "rolling_drho", "reff", "reff_joint",
-    "pair_table", "nonstationarity_flag", "f_N", "OPERATING_ENVELOPE",
+    "pair_table", "nonstationarity_flag", "f_N", "band_gap",
+    "reff_corrected", "OPERATING_ENVELOPE",
 ]
 OPERATING_ENVELOPE = {
     "reliable_rho_min": 0.45,
@@ -27,7 +28,7 @@ def rolling_corr(x, y, W: int) -> np.ndarray:
     if W < 2 or W > len(x):
         raise ValueError(f"W must satisfy 2 <= W <= {len(x)}, got W={W}.")
     T   = len(x)
-    i   = np.arange(W, T + 1)          
+    i   = np.arange(W, T + 1)
     Sx  = _wsum(_prefix(x),   i, W)
     Sy  = _wsum(_prefix(y),   i, W)
     Sx2 = _wsum(_prefix(x*x), i, W)
@@ -53,23 +54,105 @@ def reff(rho, sigma1: float = 1.0, sigma2: float = 1.0):
     num = 2.0 * (s1 + s2) ** 2
     den = (s1 + s2) ** 2 + (s1 - s2) ** 2 + 4.0 * rho ** 2 * s1 * s2
     return num / den
+_REFF_JOINT_VECTOR_CUTOFF = 20  # batched path for N<=this; loop path above
+
 def reff_joint(data, W: int) -> np.ndarray:
+    """
+    Joint entropy-based effective rank, computed on non-overlapping W-blocks.
+
+    Two paths selected automatically:
+      N <= 20  — batched: reshape -> einsum covariance -> batched eigvalsh.
+                 2.8x-9x faster than the loop for all real-world domains
+                 (finance N=4..6, EEG N=2, strain N=9).
+      N >  20  — loop: per-block np.cov + eigvalsh. For large N the
+                 eigvalsh of (N x N) dominates; batching provides no win
+                 and increases peak memory proportional to B*N*N.
+    """
     data = np.asarray(data, dtype=float)
     if data.ndim != 2:
         raise ValueError(f"data must be 2-D (T, N), got {data.shape}.")
-    T, _ = data.shape
-    out  = []
-    for t in range(W, T + 1, W):
-        cov = np.cov(data[t - W:t].T)
-        if cov.ndim < 2:
-            cov = np.array([[float(cov)]])
-        ev = np.linalg.eigvalsh(cov)
-        ev = ev[ev > 1e-10]
-        p  = ev / ev.sum() if len(ev) else np.array([1.0])
-        out.append(float(np.exp(-np.sum(p * np.log(p)))))
-    return np.array(out)
+    T, N = data.shape
+    B    = T // W
+    if B == 0:
+        return np.array([])
+
+    if N <= _REFF_JOINT_VECTOR_CUTOFF:
+        # Vectorized path
+        blocks = data[:B * W].reshape(B, W, N)
+        mu     = blocks.mean(axis=1, keepdims=True)           # (B, 1, N)
+        bc     = blocks - mu                                  # (B, W, N)
+        cov    = np.einsum('bwi,bwj->bij', bc, bc) / max(W - 1, 1)  # (B, N, N)
+        ev     = np.linalg.eigvalsh(cov)                      # (B, N)
+        ev     = np.maximum(ev, 1e-10)
+        p      = ev / ev.sum(axis=1, keepdims=True)
+        return np.exp(-np.sum(p * np.log(p), axis=1))         # (B,)
+    else:
+        # Loop path for large N (eigvalsh dominates, batching adds no win)
+        out = []
+        for t in range(W, T + 1, W):
+            cov = np.cov(data[t - W:t].T)
+            ev  = np.linalg.eigvalsh(cov)
+            ev  = ev[ev > 1e-10]
+            p   = ev / ev.sum() if len(ev) else np.array([1.0])
+            out.append(float(np.exp(-np.sum(p * np.log(p)))))
+        return np.array(out)
 def f_N(n) -> float | np.ndarray:
+    """Finite-sample correction factor: f(N) = -0.106*ln(N) + 1.070.
+    Applied as reff_corrected = reff_raw * f_N(N).
+    Valid for N=2..10 (MAE < 0.04). For N>10 joint entropy estimator
+    tracks ground truth without correction (see Section 5)."""
     return -0.106 * np.log(np.asarray(n, dtype=float)) + 1.070
+def band_gap(data: np.ndarray) -> float:
+    """
+    Compute the eigenspectrum band gap λ₁/λ₂ from the global covariance of data.
+
+    The band gap is the key diagnostic for crisis type (Proposition 12):
+      - Branch A (acute homogeneous crisis): band gap explodes (×≥1.5 vs background)
+      - Branch B (heterogeneous contagion):  band gap stable or declines
+      - Gradual corrections: no meaningful change
+
+    Parameters
+    ----------
+    data : ndarray (T, N)   cleaned data array
+
+    Returns
+    -------
+    float   λ₁/λ₂ ratio, or nan if N<2 or λ₂≈0
+    """
+    data = np.asarray(data, dtype=float)
+    cov  = np.cov(data.T)
+    if cov.ndim < 2:
+        return float("nan")
+    ev = np.sort(np.linalg.eigvalsh(cov))[::-1]
+    ev = ev[ev > 1e-10]
+    if len(ev) < 2:
+        return float("nan")
+    return float(ev[0] / ev[1])
+def reff_corrected(data: np.ndarray, W: int) -> float:
+    """
+    Entropy-based joint effective rank with finite-sample f(N) correction.
+
+    reff_corrected = mean(reff_joint_blocks) * f_N(N)
+
+    The correction is meaningful for N=2..10 (MAE<0.04 on synthetic data).
+    For heterogeneous real data (e.g. METR-LA 207 sensors) the joint
+    entropy estimator tracks ground truth without correction; applying f(N)
+    to it introduces bias. Use this function for the calibrated regime.
+
+    Parameters
+    ----------
+    data : ndarray (T, N)
+    W    : int
+
+    Returns
+    -------
+    float
+    """
+    data = np.asarray(data, dtype=float)
+    N    = data.shape[1]
+    rj   = reff_joint(data, W=W)
+    raw  = float(np.nanmean(rj)) if len(rj) else float("nan")
+    return raw * float(f_N(N))
 def nonstationarity_flag(drho_val: float, rho_star: float, W: int) -> bool:
     return bool(drho_val > (1.0 - rho_star ** 2) ** 2 / W)
 def pair_table(data, W: int, labels=None, skip=None) -> list[dict]:
@@ -80,9 +163,9 @@ def pair_table(data, W: int, labels=None, skip=None) -> list[dict]:
     skip   = skip if skip is not None else W
     labels = labels or [str(k) for k in range(N)]
     i_idx = np.arange(W, T + 1)
-    pfx_s  = {} 
-    pfx_s2 = {} 
-    col_S  = {}  
+    pfx_s  = {}
+    pfx_s2 = {}
+    col_S  = {}
     col_S2 = {}
     for k in range(N):
         x = data[:, k]

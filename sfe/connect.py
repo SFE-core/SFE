@@ -14,7 +14,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .core import pair_table, reff_joint, OPERATING_ENVELOPE
+from .core import pair_table, reff_joint, band_gap as _band_gap, reff_corrected as _reff_corrected, OPERATING_ENVELOPE
 
 __all__ = [
     "from_dataframe", "from_array", "from_csv", "from_dict",
@@ -139,24 +139,40 @@ class SFEResult:
 
     Attributes
     ----------
-    pairs       list of dict   All N(N-1)/2 pairs, sorted by rho_star desc.
-    reff_joint  ndarray        Joint effective rank, shape (T//W,).
-    W, N, T     int
-    labels      list of str    Column labels after cleaning.
-    data        ndarray        Cleaned data passed to core, shape (T, N).
-    quality     DataQualityReport
+    pairs           list of dict   All N(N-1)/2 pairs, sorted by rho_star desc.
+    reff_joint      ndarray        Joint effective rank, shape (T//W,).
+    band_gap        float          Eigenspectrum band gap λ₁/λ₂ from global cov.
+                                   Key diagnostic for crisis type (Prop. 12):
+                                   Branch A fires when ratio ≥ 1.5× background.
+    reff_corr       float          Mean reff_joint × f(N) correction.
+                                   Reliable for N=2..10; use with caution for N>10.
+    W, N, T         int
+    labels          list of str    Column labels after cleaning.
+    data            ndarray        Cleaned data passed to core, shape (T, N).
+    quality         DataQualityReport
     """
-    __slots__ = ("pairs", "reff_joint", "W", "N", "T", "labels", "data", "quality")
+    __slots__ = ("pairs", "reff_joint", "band_gap", "reff_corr",
+                 "W", "N", "T", "labels", "data", "quality",
+                 # domain-specific metadata (set by connectors, None by default)
+                 "sfreq", "timestamps", "devices", "pair_groups")
 
-    def __init__(self, pairs, reff_joint_series, W, N, T, labels, data, quality):
-        self.pairs      = pairs
-        self.reff_joint = reff_joint_series
-        self.W          = W
-        self.N          = N
-        self.T          = T
-        self.labels     = labels
-        self.data       = data
-        self.quality    = quality
+    def __init__(self, pairs, reff_joint_series, band_gap_val,
+                 reff_corr_val, W, N, T, labels, data, quality):
+        self.pairs       = pairs
+        self.reff_joint  = reff_joint_series
+        self.band_gap    = band_gap_val
+        self.reff_corr   = reff_corr_val
+        self.W           = W
+        self.N           = N
+        self.T           = T
+        self.labels      = labels
+        self.data        = data
+        self.quality     = quality
+        # domain metadata — populated by connectors
+        self.sfreq       = None
+        self.timestamps  = None
+        self.devices     = None
+        self.pair_groups = None
 
     def reliable(self):
         """Pairs in the reliable zone (ρ* > 0.45)."""
@@ -181,6 +197,8 @@ class SFEResult:
             "rho_star_max":    float(np.max(rho_stars))  if rho_stars else float("nan"),
             "drho_mean":       float(np.mean(drho_vals)) if drho_vals else float("nan"),
             "reff_joint_mean": float(np.nanmean(rj)) if len(rj) else float("nan"),
+            "band_gap":        self.band_gap,
+            "reff_corr":       self.reff_corr,
             "rows_dropped":    self.quality.rows_dropped,
             "cols_dropped":    self.quality.columns_dropped,
             "warnings":        self.quality.warnings,
@@ -193,6 +211,8 @@ class SFEResult:
             f"SFEResult(N={s['N']}, T={s['T']}, W={s['W']}, "
             f"pairs={s['n_pairs']}, reliable={s['n_reliable']}, "
             f"rho*_mean={s['rho_star_mean']:.3f}, "
+            f"band_gap={s['band_gap']:.3f}, "
+            f"reff_corr={s['reff_corr']:.3f}, "
             f"rows_dropped={q.rows_dropped}, cols_dropped={q.columns_dropped})"
         )
 
@@ -205,7 +225,9 @@ def _run(data, W, labels, quality):
     T, N  = data.shape
     pairs = pair_table(data, W=W, labels=labels)
     rj    = reff_joint(data, W=W)
-    return SFEResult(pairs, rj, W, N, T, labels, data, quality)
+    bg    = _band_gap(data)
+    rc    = _reff_corrected(data, W=W)
+    return SFEResult(pairs, rj, bg, rc, W, N, T, labels, data, quality)
 
 
 def _raise_if_bad(quality):
@@ -381,9 +403,11 @@ def print_summary(result: SFEResult, show_warnings: bool = True) -> None:
     print(f"  Pairs     : {s['n_pairs']}   "
           f"Reliable (ρ*>{env['reliable_rho_min']}) : {s['n_reliable']}   "
           f"Flagged NS>40% : {s['n_flagged']}")
-    print(f"  ρ* mean   : {s['rho_star_mean']:.3f}   ρ* max : {s['rho_star_max']:.3f}")
-    print(f"  dρ mean   : {s['drho_mean']:.5f}")
-    print(f"  r_eff joint (mean) : {s['reff_joint_mean']:.3f}")
+    print(f"  ρ* mean   : {s['rho_star_mean']:.4f}   ρ* max : {s['rho_star_max']:.4f}")
+    print(f"  dρ mean   : {s['drho_mean']:.6f}")
+    print(f"  r_eff joint (mean) : {s['reff_joint_mean']:.4f}")
+    print(f"  r_eff corrected    : {s['reff_corr']:.4f}   "
+          f"band gap λ₁/λ₂ : {s['band_gap']:.3f}×")
 
     if show_warnings and (q.rows_dropped or q.columns_dropped or q.warnings):
         print()
@@ -395,8 +419,8 @@ def print_summary(result: SFEResult, show_warnings: bool = True) -> None:
     print(f"  {'Pair':<18} {'ρ*':>6} {'dρ':>9} {'r_eff':>7} {'NS%':>6}  Zone")
     print(f"  {'-'*58}")
     for p in result.pairs:
-        print(f"  {p['label']:<18} {p['rho_star']:>6.3f} "
-              f"{p['drho_mean']:>9.5f} {p['reff_mean']:>7.3f} "
+        print(f"  {p['label']:<25} {p['rho_star']:>8.4f} "
+              f"{p['drho_mean']:>10.6f} {p['reff_mean']:>8.4f} "
               f"{p['nonstationary_pct']:>5.1f}%  {p['zone']}")
 
     if result.flagged():
