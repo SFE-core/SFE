@@ -10,10 +10,7 @@ build/
 venv/
 env/
 
-# SFE outputs
-/
-README.md
-sampledata.csv
+data/
 
 # OS
 .DS_Store
