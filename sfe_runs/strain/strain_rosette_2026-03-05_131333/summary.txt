@@ -1,8 +1,8 @@
 ==============================================================
   SFE RUN SUMMARY
 ==============================================================
-  Run folder  : strain_rosette_2026-03-05_115623
-  Timestamp   : 2026-03-05T11:56:23
+  Run folder  : strain_rosette_2026-03-05_131333
+  Timestamp   : 2026-03-05T13:13:33
 
   N (observers)     : 9
   T (timesteps)     : 86401
@@ -15,7 +15,7 @@
   rho* max          : 0.9972
   drho mean         : 0.000147
   r_eff joint mean  : 1.0939
-  r_eff corrected   : 0.9157   [f(N)=-0.106*ln(N)+1.070, N=9]
+  r_eff corrected   : 1.0939   [f(N)=-0.106*ln(N)+1.070, N=9]
   band gap lam1/lam2: 61.662x   [Branch A fires if crisis/bg >= 1.50x]
 
   -- Pairs --

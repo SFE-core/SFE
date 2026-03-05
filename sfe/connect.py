@@ -83,7 +83,7 @@ def _clean(data: np.ndarray, labels: list[str],
 
     q.nan_count = int(np.isnan(data).sum())
 
-    # 2. Drop bad columns — one pass, unavoidable per-column check
+    # 2. Drop bad columns
     keep = []
     for k in range(data.shape[1]):
         valid = data[:, k][~np.isnan(data[:, k])]
@@ -102,7 +102,7 @@ def _clean(data: np.ndarray, labels: list[str],
     data   = data[:, keep]
     labels = [labels[k] for k in keep]
 
-    # 3. Drop rows with any NaN — vectorized
+    # 3. Drop rows with any NaN
     row_ok = np.isfinite(data).all(axis=1)
     q.rows_dropped = int((~row_ok).sum())
     if q.rows_dropped:
@@ -139,40 +139,46 @@ class SFEResult:
 
     Attributes
     ----------
-    pairs           list of dict   All N(N-1)/2 pairs, sorted by rho_star desc.
-    reff_joint      ndarray        Joint effective rank, shape (T//W,).
-    band_gap        float          Eigenspectrum band gap λ₁/λ₂ from global cov.
-                                   Key diagnostic for crisis type (Prop. 12):
-                                   Branch A fires when ratio ≥ 1.5× background.
-    reff_corr       float          Mean reff_joint × f(N) correction.
-                                   Reliable for N=2..10; use with caution for N>10.
-    W, N, T         int
-    labels          list of str    Column labels after cleaning.
-    data            ndarray        Cleaned data passed to core, shape (T, N).
-    quality         DataQualityReport
+    pairs               list of dict   All N(N-1)/2 pairs, sorted by rho_star desc.
+    reff_joint          ndarray        Joint effective rank, shape (T//W,).
+    band_gap            float          Eigenspectrum band gap λ₁/λ₂ from global cov.
+    reff_corr           float          reff_joint × f(N) correction, or raw joint mean
+                                       if f(N) over-corrected (see reff_corr_fallback).
+    reff_corr_fallback  bool           True if f(N) produced reff_corr < 1 (physically
+                                       impossible) and the raw joint mean was used instead.
+                                       Indicates the high band-gap / single-dominant-mode
+                                       regime where f(N) does not apply.
+                                       See SFE-11 Open Problem 3.
+    W, N, T             int
+    labels              list of str    Column labels after cleaning.
+    data                ndarray        Cleaned data passed to core, shape (T, N).
+    quality             DataQualityReport
     """
     __slots__ = ("pairs", "reff_joint", "band_gap", "reff_corr",
+                 "reff_corr_fallback",
                  "W", "N", "T", "labels", "data", "quality",
                  # domain-specific metadata (set by connectors, None by default)
                  "sfreq", "timestamps", "devices", "pair_groups")
 
     def __init__(self, pairs, reff_joint_series, band_gap_val,
-                 reff_corr_val, W, N, T, labels, data, quality):
-        self.pairs       = pairs
-        self.reff_joint  = reff_joint_series
-        self.band_gap    = band_gap_val
-        self.reff_corr   = reff_corr_val
-        self.W           = W
-        self.N           = N
-        self.T           = T
-        self.labels      = labels
-        self.data        = data
-        self.quality     = quality
+                 reff_corr_val, reff_corr_fallback,
+                 W, N, T, labels, data, quality):
+        self.pairs              = pairs
+        self.reff_joint         = reff_joint_series
+        self.band_gap           = band_gap_val
+        self.reff_corr          = reff_corr_val
+        self.reff_corr_fallback = reff_corr_fallback
+        self.W                  = W
+        self.N                  = N
+        self.T                  = T
+        self.labels             = labels
+        self.data               = data
+        self.quality            = quality
         # domain metadata — populated by connectors
-        self.sfreq       = None
-        self.timestamps  = None
-        self.devices     = None
-        self.pair_groups = None
+        self.sfreq              = None
+        self.timestamps         = None
+        self.devices            = None
+        self.pair_groups        = None
 
     def reliable(self):
         """Pairs in the reliable zone (ρ* > 0.45)."""
@@ -187,32 +193,34 @@ class SFEResult:
         drho_vals = [p["drho_mean"] for p in self.pairs]
         rj        = self.reff_joint
         return {
-            "N":               self.N,
-            "T":               self.T,
-            "W":               self.W,
-            "n_pairs":         len(self.pairs),
-            "n_reliable":      sum(p["zone"] == "reliable" for p in self.pairs),
-            "n_flagged":       sum(p["nonstationary_pct"] > 40.0 for p in self.pairs),
-            "rho_star_mean":   float(np.mean(rho_stars)) if rho_stars else float("nan"),
-            "rho_star_max":    float(np.max(rho_stars))  if rho_stars else float("nan"),
-            "drho_mean":       float(np.mean(drho_vals)) if drho_vals else float("nan"),
-            "reff_joint_mean": float(np.nanmean(rj)) if len(rj) else float("nan"),
-            "band_gap":        self.band_gap,
-            "reff_corr":       self.reff_corr,
-            "rows_dropped":    self.quality.rows_dropped,
-            "cols_dropped":    self.quality.columns_dropped,
-            "warnings":        self.quality.warnings,
+            "N":                   self.N,
+            "T":                   self.T,
+            "W":                   self.W,
+            "n_pairs":             len(self.pairs),
+            "n_reliable":          sum(p["zone"] == "reliable" for p in self.pairs),
+            "n_flagged":           sum(p["nonstationary_pct"] > 40.0 for p in self.pairs),
+            "rho_star_mean":       float(np.mean(rho_stars)) if rho_stars else float("nan"),
+            "rho_star_max":        float(np.max(rho_stars))  if rho_stars else float("nan"),
+            "drho_mean":           float(np.mean(drho_vals)) if drho_vals else float("nan"),
+            "reff_joint_mean":     float(np.nanmean(rj)) if len(rj) else float("nan"),
+            "band_gap":            self.band_gap,
+            "reff_corr":           self.reff_corr,
+            "reff_corr_fallback":  self.reff_corr_fallback,
+            "rows_dropped":        self.quality.rows_dropped,
+            "cols_dropped":        self.quality.columns_dropped,
+            "warnings":            self.quality.warnings,
         }
 
     def __repr__(self):
         q = self.quality
         s = self.summary_dict()
+        fallback_note = " [joint mean, f(N) suppressed]" if s["reff_corr_fallback"] else ""
         return (
             f"SFEResult(N={s['N']}, T={s['T']}, W={s['W']}, "
             f"pairs={s['n_pairs']}, reliable={s['n_reliable']}, "
             f"rho*_mean={s['rho_star_mean']:.3f}, "
             f"band_gap={s['band_gap']:.3f}, "
-            f"reff_corr={s['reff_corr']:.3f}, "
+            f"reff_corr={s['reff_corr']:.3f}{fallback_note}, "
             f"rows_dropped={q.rows_dropped}, cols_dropped={q.columns_dropped})"
         )
 
@@ -226,8 +234,8 @@ def _run(data, W, labels, quality):
     pairs = pair_table(data, W=W, labels=labels)
     rj    = reff_joint(data, W=W)
     bg    = _band_gap(data)
-    rc    = _reff_corrected(data, W=W)
-    return SFEResult(pairs, rj, bg, rc, W, N, T, labels, data, quality)
+    rc, fallback = _reff_corrected(data, W=W)
+    return SFEResult(pairs, rj, bg, rc, fallback, W, N, T, labels, data, quality)
 
 
 def _raise_if_bad(quality):
@@ -329,7 +337,6 @@ def from_csv(path, W: int, columns=None,
     header     = rows[0] if has_header else [str(k) for k in range(len(rows[0]))]
     data_rows  = rows[1:] if has_header else rows
 
-    # Parse — skip non-numeric rows, count them
     parsed, bad = [], 0
     for row in data_rows:
         try:
@@ -342,7 +349,6 @@ def from_csv(path, W: int, columns=None,
 
     arr = np.array(parsed, dtype=float)
 
-    # Column selection
     if columns is None:
         col_idx = list(range(arr.shape[1]))
     else:
@@ -395,6 +401,11 @@ def print_summary(result: SFEResult, show_warnings: bool = True) -> None:
     q   = result.quality
     env = OPERATING_ENVELOPE
 
+    fallback_note = (
+        "  ← f(N) over-corrected (< 1), raw joint mean used — see SFE-11 Open Problem 3"
+        if s["reff_corr_fallback"] else ""
+    )
+
     print()
     print("=" * 62)
     print("  SFE RESULT SUMMARY")
@@ -407,7 +418,7 @@ def print_summary(result: SFEResult, show_warnings: bool = True) -> None:
     print(f"  dρ mean   : {s['drho_mean']:.6f}")
     print(f"  r_eff joint (mean) : {s['reff_joint_mean']:.4f}")
     print(f"  r_eff corrected    : {s['reff_corr']:.4f}   "
-          f"band gap λ₁/λ₂ : {s['band_gap']:.3f}×")
+          f"band gap λ₁/λ₂ : {s['band_gap']:.3f}×{fallback_note}")
 
     if show_warnings and (q.rows_dropped or q.columns_dropped or q.warnings):
         print()
