@@ -61,15 +61,8 @@ def _fig(nrows, ncols, figsize, title):
 # Plotted as background stars on every phase portrait for context.
 # ---------------------------------------------------------------------------
 
-_CROSS_DOMAIN_REFS = [
-    # (rho_star,  drho,   color,     label)
-    (0.963, 0.004, "#ff6b35", "ETT HUFL-MUFL"),
-    (0.831, 0.004, "#c77dff", "EEG C3-C4"),
-    (0.426, 0.047, "#00b4d8", "METR-LA"),
-    (0.850, 0.005, "#00e676", "OU high-k"),
-    (0.450, 0.020, "#ffd54f", "OU mid-k"),
-    (0.180, 0.054, "#bdbdbd", "OU low-k"),
-]
+from sfe.analysis.regimes import ref_points
+
 
 
 # ---------------------------------------------------------------------------
@@ -114,7 +107,7 @@ def phase_portrait(result, title: str | None = None) -> "Figure":
     ]
 
     # Cross-domain reference stars
-    for rx, ry, rc, rl in _CROSS_DOMAIN_REFS:
+    for rx, ry, rc, rl in ref_points():
         ax.scatter(rx, ry, marker="*", s=130, color=rc, zorder=2)
         legend_handles.append(
             mlines.Line2D([], [], marker="*", color=rc, lw=0,

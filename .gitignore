@@ -5,6 +5,7 @@ __pycache__/
 *.pyo
 .eggs/
 build/
+sfe_runs/
 
 # Virtual environment
 venv/

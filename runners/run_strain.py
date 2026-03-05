@@ -15,9 +15,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from sfe.connectors.strain import (
-    from_strain_csv, diurnal_breakdown, print_diurnal, strain_figures
-)
+from sfe.connectors.strain import from_strain_csv
+from sfe.analysis.strain import diurnal_breakdown, print_diurnal, strain_figures
 from sfe.outputs import save_run
 
 

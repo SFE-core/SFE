@@ -62,37 +62,7 @@ __all__ = ["LLMConfig", "InterpretationResult", "interpret", "build_prompt"]
 # Domain context
 # ---------------------------------------------------------------------------
 
-_DOMAIN_CONTEXT = {
-    "finance": (
-        "Data are log-returns of financial instruments. "
-        "Coupling reflects shared market structure. "
-        "Non-stationarity often indicates regime transitions or crisis events. "
-        "Band gap is the critical crisis-type discriminator: "
-        "Branch A (acute homogeneous, e.g. COVID crash) shows band gap ≥1.5× background; "
-        "Branch B (heterogeneous contagion, e.g. 2008 Lehman) shows stable/declining band gap "
-        "with reff collapse and drho elevation. "
-        "Gradual corrections (e.g. dot-com 2000-02) show neither branch firing."
-    ),
-    "eeg": (
-        "Data are EEG biosignals from electrode pairs. "
-        "Coupling reflects neural synchrony between brain regions. "
-        "Event-locked dρ drops indicate task-driven channel stabilization. "
-        "Two-phase structure: dρ spikes at stimulus onset (transition), "
-        "then drops below baseline (re-lock). Lead time = dρ trough - ρ* peak."
-    ),
-    "traffic": (
-        "Data are sensor readings from a physical network (traffic, power, temperature). "
-        "Coupling reflects shared physical dynamics. "
-        "High r_eff indicates the network has not collapsed to a single shared mode. "
-        "Band gap reflects the dominant mode strength relative to background."
-    ),
-    "strain": (
-        "Data are strain rosette sensor channels from a structural health monitoring array. "
-        "Within-device coupling reflects geometric constraints of the rosette; "
-        "cross-device coupling reflects structural load propagation. "
-        "Band gap > 3× indicates a single dominant stress mode."
-    ),
-}
+from sfe.analysis.regimes import domain_context, classify_result
 
 _DOMAIN_FALLBACK = (
     "Data are multivariate time series from an unspecified domain. "

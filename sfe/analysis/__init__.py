@@ -1,4 +1,4 @@
-__all__ = ["finance", "eeg", "traffic", "strain", "mat"]
+__all__ = ["strain", "finance", "eeg", "shm", "regimes"]
 
 def __getattr__(name):
     if name in __all__:

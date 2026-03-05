@@ -3,6 +3,7 @@ from . import outputs
 from . import ai
 from . import connectors
 from . import figures
+from . import analysis
 
 from .core import (
     rolling_corr, rolling_drho, reff, reff_joint,
