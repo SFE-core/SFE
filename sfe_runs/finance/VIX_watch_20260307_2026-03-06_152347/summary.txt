@@ -1,0 +1,45 @@
+==============================================================
+  SFE RUN SUMMARY
+==============================================================
+  Run folder  : VIX_watch_20260307_2026-03-06_152347
+  Timestamp   : 2026-03-06T15:23:47
+
+  N (observers)     : 6
+  T (timesteps)     : 128
+  W (window)        : 5
+  Pairs total       : 15
+  Reliable (rho*>0.45) : 11
+  Flagged NS>40%    : 5
+
+  rho* mean         : 0.4728
+  rho* max          : 0.6888
+  drho mean         : 0.087123
+  r_eff joint mean  : 2.4357
+  r_eff corrected   : 2.1436   [f(N)=-0.106*ln(N)+1.070, N=6]
+  band gap lam1/lam2: 1.549x   [Branch A fires if crisis/bg >= 1.50x]
+
+  -- Pairs --
+  Pair                          rho*       drho    r_eff    NS%  Zone
+  --------------------------------------------------------
+  GS-JPM                      0.6888   0.045009   1.3532  43.5%  reliable
+  JPM-MSFT                    0.5066   0.112096   1.5703  30.4%  reliable
+  JPM-LMT                     0.4927   0.105088   1.5741  30.4%  reliable
+  MSFT-XOM                    0.4905   0.100917   1.5825  39.1%  reliable
+  AAPL-GS                     0.4670   0.078794   1.6139  43.5%  reliable
+  JPM-XOM                     0.4649   0.083883   1.6195  30.4%  reliable
+  AAPL-JPM                    0.4618   0.082258   1.6163  26.1%  reliable
+  AAPL-MSFT                   0.4534   0.095819   1.6271  47.8%  reliable
+  GS-XOM                      0.4514   0.077509   1.6288  39.1%  reliable
+  AAPL-XOM                    0.4505   0.097233   1.6356  52.2%  reliable
+  AAPL-LMT                    0.4504   0.087164   1.6343  47.8%  reliable
+  LMT-MSFT                    0.4483   0.089766   1.6284  39.1%  marginal
+  GS-MSFT                     0.4374   0.097682   1.6320  39.1%  marginal
+  LMT-XOM                     0.4209   0.066786   1.6688  17.4%  marginal
+  GS-LMT                      0.4078   0.086842   1.6797  21.7%  marginal
+
+  -- Domain metadata --
+  note                   : SFE-12 second observation — after March 7 close
+  VIX                    : 27.15 +17.32%
+
+  Experimental. Not financial, medical, or engineering advice.
+==============================================================

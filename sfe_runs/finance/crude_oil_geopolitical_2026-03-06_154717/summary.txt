@@ -1,0 +1,45 @@
+==============================================================
+  SFE RUN SUMMARY
+==============================================================
+  Run folder  : crude_oil_geopolitical_2026-03-06_154717
+  Timestamp   : 2026-03-06T15:47:17
+
+  N (observers)     : 6
+  T (timesteps)     : 128
+  W (window)        : 5
+  Pairs total       : 15
+  Reliable (rho*>0.45) : 10
+  Flagged NS>40%    : 9
+
+  rho* mean         : 0.5645
+  rho* max          : 0.9107
+  drho mean         : 0.063273
+  r_eff joint mean  : 2.1141
+  r_eff corrected   : 1.8606   [f(N)=-0.106*ln(N)+1.070, N=6]
+  band gap lam1/lam2: 2.989x   [Branch A fires if crisis/bg >= 1.50x]
+
+  -- Pairs --
+  Pair                          rho*       drho    r_eff    NS%  Zone
+  --------------------------------------------------------
+  CL=F-USO                    0.9107   0.016202   1.0978  69.6%  reliable
+  CVX-XOM                     0.8060   0.023715   1.2196  65.2%  reliable
+  CVX-USO                     0.6979   0.030934   1.3460  43.5%  reliable
+  USO-XOM                     0.6917   0.034084   1.3528  52.2%  reliable
+  CL=F-XOM                    0.6780   0.036580   1.3657  56.5%  reliable
+  CL=F-CVX                    0.6678   0.042343   1.3850  47.8%  reliable
+  CL=F-GC=F                   0.4944   0.117500   1.5862  17.4%  reliable
+  GC=F-LMT                    0.4755   0.095128   1.6011  30.4%  reliable
+  CL=F-LMT                    0.4599   0.085404   1.6160  34.8%  reliable
+  CVX-GC=F                    0.4542   0.086954   1.6209  43.5%  reliable
+  GC=F-USO                    0.4491   0.100711   1.6266  34.8%  marginal
+  CVX-LMT                     0.4313   0.065698   1.6517  13.0%  marginal
+  GC=F-XOM                    0.4238   0.068778   1.6568  73.9%  marginal
+  LMT-XOM                     0.4209   0.066786   1.6688  17.4%  marginal
+  LMT-USO                     0.4060   0.078283   1.6710  52.2%  marginal
+
+  -- Domain metadata --
+  note                   : Crude oil geopolitical snapshot — Polymarket $110 by March 31 at 48%
+  VIX                    : 29.69 +25.01% (March 7 close)
+
+  Experimental. Not financial, medical, or engineering advice.
+==============================================================

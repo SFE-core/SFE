@@ -15,6 +15,7 @@ import numpy as np
 
 from .connect import SFEResult
 from .core import OPERATING_ENVELOPE
+from .analysis.absorption import compute_absorption_signature
 
 __all__ = ["RunFolder", "save_run"]
 
@@ -60,6 +61,7 @@ class RunFolder:
         s   = result.summary_dict()
         env = OPERATING_ENVELOPE
         out = self.path / "summary.txt"
+        sig = compute_absorption_signature(result.pairs)
 
         lines = [
             "=" * 62,
@@ -81,6 +83,9 @@ class RunFolder:
             f"  r_eff joint mean  : {s['reff_joint_mean']:.4f}",
             f"  r_eff corrected   : {s['reff_corr']:.4f}   [f(N)=-0.106*ln(N)+1.070, N={s['N']}]",
             f"  band gap lam1/lam2: {s['band_gap']:.3f}x   [Branch A fires if crisis/bg >= 1.50x]",
+            f"  CV(drho)          : {sig['cv_drho']:.4f}   [<0.20 homogeneous, >0.20 dispersed]",
+            f"  R_drho            : {sig['R_drho']:.2f}x   [vs Lehman baseline 0.01537]",
+            f"  absorption        : {'YES — active channel suppression' if sig['absorption'] else 'no'}   [{sig['classification']}]",
             "",
             "  -- Pairs --",
             f"  {'Pair':<25} {'rho*':>8} {'drho':>10} {'r_eff':>8} {'NS%':>6}  Zone",
