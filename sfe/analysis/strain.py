@@ -109,6 +109,7 @@ def strain_figures(result: SFEResult, title_prefix: str = "") -> dict:
     import matplotlib.lines as mlines
     from ..figures import all_figures
     from ..core import OPERATING_ENVELOPE
+    from ..analysis.regimes import ref_points 
 
     sep, _ = _detect_label_format(result.labels)
     pfx    = f"{title_prefix} -- " if title_prefix else "Strain Rosette -- "
@@ -120,14 +121,6 @@ def strain_figures(result: SFEResult, title_prefix: str = "") -> dict:
     s    = result.summary_dict()
     bg_str = f"λ₁/λ₂={s['band_gap']:.2f}×   r_eff joint={s['reff_joint_mean']:.4f}"
 
-    _CROSS_DOMAIN_REFS = [
-        (0.963, 0.004, "#ff6b35", "ETT HUFL-MUFL"),
-        (0.831, 0.004, "#c77dff", "EEG C3-C4"),
-        (0.426, 0.047, "#00b4d8", "METR-LA"),
-        (0.850, 0.005, "#00e676", "OU high-k"),
-        (0.450, 0.020, "#ffd54f", "OU mid-k"),
-        (0.180, 0.054, "#bdbdbd", "OU low-k"),
-    ]
     _COLORS = ["#ff6b35", "#00b4d8", "#ffd60a", "#c77dff",
                "#81c784", "#ff8a65", "#4fc3f7", "#aed581",
                "#f48fb1", "#80cbc4"]
@@ -165,7 +158,7 @@ def strain_figures(result: SFEResult, title_prefix: str = "") -> dict:
             mlines.Line2D([], [], color="#aaaaaa", lw=1.2, ls="--",
                           label=f"degraded ρ*<{dmax}"),
         ]
-        for rx, ry, rc, rl in _CROSS_DOMAIN_REFS:
+        for rx, ry, rc, rl in ref_points():
             ax.scatter(rx, ry, marker="*", s=130, color=rc, zorder=2)
             legend_handles.append(
                 mlines.Line2D([], [], marker="*", color=rc, lw=0,

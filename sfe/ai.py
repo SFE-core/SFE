@@ -64,10 +64,6 @@ __all__ = ["LLMConfig", "InterpretationResult", "interpret", "build_prompt"]
 
 from sfe.analysis.regimes import domain_context, classify_result
 
-_DOMAIN_FALLBACK = (
-    "Data are multivariate time series from an unspecified domain. "
-    "Interpret coupling structure in general terms."
-)
 
 
 # ---------------------------------------------------------------------------
@@ -126,7 +122,7 @@ def build_prompt(result: SFEResult, domain: str = "unknown",
     """
     s   = result.summary_dict()
     env = OPERATING_ENVELOPE
-    ctx = _DOMAIN_CONTEXT.get(domain.lower(), _DOMAIN_FALLBACK)
+    ctx = domain_context(domain)
 
     if extra_context:
         ctx = ctx + "\n  " + extra_context.strip()

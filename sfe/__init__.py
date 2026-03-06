@@ -4,6 +4,7 @@ from . import ai
 from . import connectors
 from . import figures
 from . import analysis
+from . import formats        
 
 from .core import (
     rolling_corr, rolling_drho, reff, reff_joint,
@@ -17,15 +18,15 @@ __author__  = "Jesus David Calderas Cervantes"
 __license__ = "MIT"
 
 __all__ = [
-    # core numerical primitives
     "rolling_corr", "rolling_drho", "reff", "reff_joint",
     "pair_table", "nonstationarity_flag", "f_N",
     "band_gap", "reff_corrected",
     "OPERATING_ENVELOPE",
-    # modules
     "connect",
     "outputs",
     "ai",
     "connectors",
     "figures",
+    "analysis",
+    "formats", 
 ]

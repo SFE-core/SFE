@@ -105,8 +105,9 @@ class Regime:
     detection  : str
     ref_point  : Tuple[float, float]
     ref_color  : str
-    notes      : str  = ""
-    pending    : bool = False
+    notes            : str  = ""
+    pending          : bool = False
+    cross_domain_ref : bool = True   # show as anchor on ALL phase portraits
 
 
 # ---------------------------------------------------------------------------
@@ -213,6 +214,7 @@ REGIMES: list[Regime] = [
         detection = "Branch A ✓",
         ref_point = (0.915, 0.025),
         ref_color = "#ff4444",
+        cross_domain_ref = False,
         notes     = "Band gap explosion ≥1.5× background is the discriminating signature. "
                     "CRISIS_THRESHOLDS Branch A calibrated on this event. "
                     "See Open Problem 6.",
@@ -230,6 +232,7 @@ REGIMES: list[Regime] = [
         detection = "Branch B ✓",
         ref_point = (0.695, 0.030),
         ref_color = "#ff8800",
+        cross_domain_ref = False,
         notes     = "Band gap stable — variance diffused across modes. "
                     "r_eff collapse + dρ elevation on >50% of pairs. "
                     "CRISIS_THRESHOLDS Branch B validated on this event.",
@@ -247,6 +250,7 @@ REGIMES: list[Regime] = [
         detection = "correctly silent ✓",
         ref_point = (0.530, 0.015),
         ref_color = "#aaaaaa",
+        cross_domain_ref = False,
         notes     = "Neither branch fires. Gradual valuation correction "
                     "is not a synchronization event.",
     ),
@@ -344,14 +348,30 @@ def get_regime(domain: str) -> Regime | None:
 
 def ref_points() -> list[tuple]:
     """
-    Return (rho_star, drho, color, label) for all validated non-pending regimes.
+    Return (rho_star, drho, color, label) for all validated cross-domain anchors.
     Used by figures.py for phase portrait cross-domain anchors.
-    Replaces the hardcoded _CROSS_DOMAIN_REFS in figures.py and analysis/strain.py.
+
+    Label format: "{domain} — {mechanism}"
+    e.g. "ETTh1 — Persistent lock"
+         "METR-LA — Sync transition"
+         "EEG motor cortex — Disruption/relock"
+
+    This format is substrate-independent: it tells the analyst what coupling
+    geometry the anchor represents, not which system produced it.
+    Only regimes with cross_domain_ref=True are included — domain-specific
+    results (e.g. finance crash events) are excluded.
     """
     return [
-        (r.ref_point[0], r.ref_point[1], r.ref_color, r.domain)
+        (
+            r.ref_point[0],
+            r.ref_point[1],
+            r.ref_color,
+            r.mechanism,
+        )
         for r in REGIMES
-        if not r.pending and r.ref_point != (0.0, 0.0)
+        if not r.pending
+        and r.cross_domain_ref
+        and r.ref_point != (0.0, 0.0)
     ]
 
 

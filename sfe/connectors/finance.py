@@ -35,6 +35,7 @@ from pathlib import Path
 import numpy as np
 
 from ..connect import from_dataframe, SFEResult
+from ..analysis.regimes import CRISIS_THRESHOLDS as REGIME_THRESHOLDS
 
 __all__ = [
     "from_yfinance",
@@ -56,19 +57,6 @@ __all__ = [
 TICKERS_COVID  = ["AAPL", "MSFT", "GOOGL", "NVDA"]
 TICKERS_2008   = ["AAPL", "MSFT", "GOOGL", "GS", "JPM", "C"]
 TICKERS_DOTCOM = ["AAPL", "MSFT", "INTC", "CSCO", "ORCL", "AMZN"]
-
-# ---------------------------------------------------------------------------
-# Regime detection thresholds (Proposition 12, SFE-11)
-# ---------------------------------------------------------------------------
-# Calibrated on COVID crash (Branch A). Tested out-of-sample on 2008 (Branch B).
-# DO NOT tune these without re-running the full empirical validation.
-
-REGIME_THRESHOLDS = {
-    "rho_delta_min":    0.10,   # minimum Δρ* to qualify as crisis
-    "bandgap_mult_min": 1.50,   # Branch A: crash band gap ≥ this × full-period band gap
-    "reff_delta_max":  -0.10,   # minimum r_eff collapse to qualify
-    "pairs_pct_min":    0.50,   # Branch B: fraction of pairs showing elevation
-}
 
 
 # ---------------------------------------------------------------------------
