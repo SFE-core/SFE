@@ -1,0 +1,39 @@
+==============================================================
+  SFE RUN SUMMARY
+==============================================================
+  Run folder  : COVID_crash_2026-03-06_011538
+  Timestamp   : 2026-03-06T01:15:38
+
+  N (observers)     : 4
+  T (timesteps)     : 504
+  W (window)        : 20
+  Pairs total       : 6
+  Reliable (rho*>0.45) : 6
+  Flagged NS>40%    : 4
+
+  rho* mean         : 0.6211
+  rho* max          : 0.6904
+  drho mean         : 0.018085
+  r_eff joint mean  : 2.1907
+  r_eff corrected   : 2.0221   [f(N)=-0.106*ln(N)+1.070, N=4]
+  band gap lam1/lam2: 8.334x   [Branch A fires if crisis/bg >= 1.50x]
+
+  -- Pairs --
+  Pair                          rho*       drho    r_eff    NS%  Zone
+  --------------------------------------------------------
+  GOOGL-MSFT                  0.6904   0.014570   1.3583  52.2%  reliable
+  AAPL-MSFT                   0.6573   0.023608   1.3938  56.5%  reliable
+  MSFT-NVDA                   0.6403   0.018241   1.4152  39.1%  reliable
+  AAPL-NVDA                   0.6153   0.015174   1.4467  47.8%  reliable
+  AAPL-GOOGL                  0.5950   0.019856   1.4724  52.2%  reliable
+  GOOGL-NVDA                  0.5283   0.017060   1.5389  39.1%  reliable
+
+  -- Domain metadata --
+  crash_window           : 2020-02-01 → 2020-04-30
+  regime                 : CRISIS COUPLING — Branch A ✓  (acute homogeneous shock)
+  band_gap_full          : 8.334×
+  band_gap_crash         : 20.772×
+  bandgap_ratio          : 2.492×
+
+  Experimental. Not financial, medical, or engineering advice.
+==============================================================

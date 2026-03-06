@@ -1,0 +1,14 @@
+SFE DATA QUALITY REPORT
+----------------------------------------
+original_shape  : (127, 6)
+cleaned_shape   : (127, 6)
+rows_dropped    : 0
+cols_dropped    : []
+inf_replaced    : 0
+nan_count       : 0
+
+warnings:
+  (none)
+
+errors:
+  (none)

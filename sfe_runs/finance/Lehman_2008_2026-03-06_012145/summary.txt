@@ -1,0 +1,48 @@
+==============================================================
+  SFE RUN SUMMARY
+==============================================================
+  Run folder  : Lehman_2008_2026-03-06_012145
+  Timestamp   : 2026-03-06T01:21:45
+
+  N (observers)     : 6
+  T (timesteps)     : 755
+  W (window)        : 20
+  Pairs total       : 15
+  Reliable (rho*>0.45) : 13
+  Flagged NS>40%    : 10
+
+  rho* mean         : 0.5357
+  rho* max          : 0.7622
+  drho mean         : 0.015369
+  r_eff joint mean  : 2.7367
+  r_eff corrected   : 2.4085   [f(N)=-0.106*ln(N)+1.070, N=6]
+  band gap lam1/lam2: 5.619x   [Branch A fires if crisis/bg >= 1.50x]
+
+  -- Pairs --
+  Pair                          rho*       drho    r_eff    NS%  Zone
+  --------------------------------------------------------
+  GS-JPM                      0.7622   0.007097   1.2688  60.0%  reliable
+  C-JPM                       0.7300   0.006855   1.3087  42.9%  reliable
+  C-GS                        0.6776   0.009413   1.3716  54.3%  reliable
+  AAPL-GOOGL                  0.6054   0.017033   1.4542  45.7%  reliable
+  GOOGL-GS                    0.5401   0.015874   1.5356  51.4%  reliable
+  GOOGL-JPM                   0.5278   0.013826   1.5518  40.0%  reliable
+  GOOGL-MSFT                  0.5078   0.018929   1.5694  42.9%  reliable
+  JPM-MSFT                    0.4966   0.017077   1.5856  45.7%  reliable
+  GS-MSFT                     0.4794   0.016920   1.6038  42.9%  reliable
+  AAPL-GS                     0.4768   0.014955   1.6095  34.3%  reliable
+  AAPL-MSFT                   0.4761   0.019063   1.6021  57.1%  reliable
+  C-GOOGL                     0.4627   0.023927   1.6261  42.9%  reliable
+  AAPL-JPM                    0.4538   0.015561   1.6336  40.0%  reliable
+  C-MSFT                      0.4391   0.017789   1.6517  34.3%  marginal
+  AAPL-C                      0.3993   0.016221   1.6974  31.4%  marginal
+
+  -- Domain metadata --
+  crash_window           : 2008-09-01 → 2009-03-31
+  regime                 : CRISIS COUPLING — Branch B ✓  (heterogeneous contagion)
+  band_gap_full          : 5.619×
+  band_gap_crash         : 6.468×
+  bandgap_ratio          : 1.151×
+
+  Experimental. Not financial, medical, or engineering advice.
+==============================================================

@@ -1,0 +1,45 @@
+==============================================================
+  SFE RUN SUMMARY
+==============================================================
+  Run folder  : VIX_watch_short_20260306_2026-03-06_014309
+  Timestamp   : 2026-03-06T01:43:09
+
+  N (observers)     : 6
+  T (timesteps)     : 127
+  W (window)        : 5
+  Pairs total       : 15
+  Reliable (rho*>0.45) : 11
+  Flagged NS>40%    : 5
+
+  rho* mean         : 0.4734
+  rho* max          : 0.6885
+  drho mean         : 0.087452
+  r_eff joint mean  : 2.4357
+  r_eff corrected   : 2.1436   [f(N)=-0.106*ln(N)+1.070, N=6]
+  band gap lam1/lam2: 1.544x   [Branch A fires if crisis/bg >= 1.50x]
+
+  -- Pairs --
+  Pair                          rho*       drho    r_eff    NS%  Zone
+  --------------------------------------------------------
+  GS-JPM                      0.6885   0.045371   1.3534  43.5%  reliable
+  JPM-MSFT                    0.5091   0.112610   1.5674  30.4%  reliable
+  JPM-LMT                     0.4943   0.105271   1.5720  30.4%  reliable
+  MSFT-XOM                    0.4934   0.100925   1.5794  39.1%  reliable
+  AAPL-GS                     0.4646   0.079380   1.6167  43.5%  reliable
+  AAPL-JPM                    0.4621   0.082834   1.6157  26.1%  reliable
+  JPM-XOM                     0.4620   0.084558   1.6229  30.4%  reliable
+  AAPL-XOM                    0.4538   0.097183   1.6326  52.2%  reliable
+  GS-XOM                      0.4519   0.077927   1.6279  39.1%  reliable
+  AAPL-LMT                    0.4519   0.087300   1.6324  47.8%  reliable
+  AAPL-MSFT                   0.4519   0.096476   1.6288  47.8%  reliable
+  LMT-MSFT                    0.4496   0.090386   1.6266  39.1%  marginal
+  GS-MSFT                     0.4404   0.097588   1.6290  39.1%  marginal
+  LMT-XOM                     0.4193   0.067271   1.6706  17.4%  marginal
+  GS-LMT                      0.4086   0.086701   1.6785  21.7%  marginal
+
+  -- Domain metadata --
+  note                   : Short window — capturing Iran shock
+  VIX                    : 23.75 +12.29% on Iran strike news
+
+  Experimental. Not financial, medical, or engineering advice.
+==============================================================

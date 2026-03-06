@@ -1,0 +1,120 @@
+==============================================================
+  SFE RUN SUMMARY
+==============================================================
+  Run folder  : trackedmodes_2026-03-05_233827
+  Timestamp   : 2026-03-05T23:38:27
+
+  N (observers)     : 14
+  T (timesteps)     : 132
+  W (window)        : 24
+  Pairs total       : 91
+  Reliable (rho*>0.45) : 12
+  Flagged NS>40%    : 16
+
+  rho* mean         : 0.3157
+  rho* max          : 0.6919
+  drho mean         : 0.051251
+  r_eff joint mean  : 4.2979
+  r_eff corrected   : 3.3965   [f(N)=-0.106*ln(N)+1.070, N=14]
+  band gap lam1/lam2: 18.562x   [Branch A fires if crisis/bg >= 1.50x]
+
+  -- Pairs --
+  Pair                          rho*       drho    r_eff    NS%  Zone
+  --------------------------------------------------------
+  modes.f_col1-modes.f_col3   0.6919   0.032292   1.3610  66.7%  reliable
+  modes.f_col0-modes.f_col1   0.6425   0.034676   1.4138  66.7%  reliable
+  modes.f_col0-modes.f_col3   0.6240   0.044708   1.4403  66.7%  reliable
+  modes.f_col3-modes.f_col12   0.6213   0.134989   1.4482  66.7%  reliable
+  modes.f_col3-modes.f_col8   0.5952   0.040330   1.4757   0.0%  reliable
+  modes.f_col9-modes.f_col12   0.5534   0.041556   1.5332  33.3%  reliable
+  modes.f_col1-modes.f_col8   0.5473   0.046307   1.5238  33.3%  reliable
+  modes.f_col3-modes.f_col9   0.5248   0.125142   1.5683  33.3%  reliable
+  modes.f_col5-modes.f_col12   0.5199   0.043520   1.5521   0.0%  reliable
+  modes.f_col1-modes.f_col12   0.4851   0.119701   1.6047  33.3%  reliable
+  modes.f_col8-modes.f_col12   0.4658   0.108621   1.6198  66.7%  reliable
+  modes.f_col0-modes.f_col8   0.4604   0.050107   1.6259  33.3%  reliable
+  modes.f_col1-modes.f_col9   0.4382   0.108301   1.6479  33.3%  marginal
+  modes.f_col8-modes.f_col9   0.4374   0.127253   1.6417  33.3%  marginal
+  modes.f_col5-modes.f_col8   0.4301   0.095820   1.6657  33.3%  marginal
+  modes.f_col5-modes.f_col9   0.4273   0.047434   1.6577  33.3%  marginal
+  modes.f_col3-modes.f_col5   0.4264   0.109831   1.6700  66.7%  marginal
+  modes.f_col0-modes.f_col12   0.4248   0.083222   1.6660  33.3%  marginal
+  modes.f_col11-modes.f_col13   0.4126   0.058375   1.6780  33.3%  marginal
+  modes.f_col1-modes.f_col11   0.3954   0.086903   1.6791   0.0%  marginal
+  modes.f_col11-modes.f_col12   0.3920   0.048663   1.6893  33.3%  marginal
+  modes.f_col3-modes.f_col11   0.3899   0.100973   1.6829  66.7%  marginal
+  modes.f_col8-modes.f_col11   0.3862   0.101480   1.7100  33.3%  marginal
+  modes.f_col1-modes.f_col5   0.3804   0.096520   1.7078  33.3%  marginal
+  modes.f_col9-modes.f_col13   0.3787   0.079873   1.7008   0.0%  marginal
+  modes.f_col1-modes.f_col13   0.3765   0.109481   1.7068   0.0%  marginal
+  modes.f_col3-modes.f_col6   0.3764   0.022922   1.7311   0.0%  marginal
+  modes.f_col0-modes.f_col9   0.3704   0.060951   1.7122   0.0%  marginal
+  modes.f_col3-modes.f_col13   0.3697   0.110935   1.7113  33.3%  marginal
+  modes.f_col6-modes.f_col8   0.3671   0.025680   1.7416  33.3%  marginal
+  modes.f_col1-modes.f_col6   0.3600   0.028934   1.7455   0.0%  marginal
+  modes.f_col5-modes.f_col7   0.3586   0.049389   1.7432  33.3%  marginal
+  modes.f_col0-modes.f_col6   0.3511   0.027519   1.7609  33.3%  marginal
+  modes.f_col12-modes.f_col13   0.3492   0.073340   1.7264  33.3%  marginal
+  modes.f_col9-modes.f_col11   0.3441   0.054156   1.7344  66.7%  marginal
+  modes.f_col0-modes.f_col11   0.3438   0.076115   1.7453  33.3%  marginal
+  modes.f_col0-modes.f_col5   0.3412   0.091175   1.7369  33.3%  marginal
+  modes.f_col3-modes.f_col7   0.3398   0.059040   1.7557  33.3%  marginal
+  modes.f_col5-modes.f_col11   0.3351   0.054959   1.7413  33.3%  marginal
+  modes.f_col0-modes.f_col13   0.3327   0.075769   1.7452   0.0%  marginal
+  modes.f_col7-modes.f_col9   0.3323   0.041606   1.7537  33.3%  marginal
+  modes.f_col1-modes.f_col7   0.3319   0.060322   1.7579  66.7%  marginal
+  modes.f_col5-modes.f_col13   0.3211   0.069846   1.7529  66.7%  marginal
+  modes.f_col1-modes.f_col10   0.3179   0.057284   1.7516  33.3%  marginal
+  modes.f_col5-modes.f_col10   0.3164   0.042036   1.7606  33.3%  marginal
+  modes.f_col7-modes.f_col11   0.3105   0.036898   1.7734  33.3%  marginal
+  modes.f_col6-modes.f_col12   0.3105   0.029072   1.7994   0.0%  marginal
+  modes.f_col9-modes.f_col10   0.3088   0.048313   1.7725  33.3%  marginal
+  modes.f_col7-modes.f_col8   0.3036   0.070265   1.7739  33.3%  marginal
+  modes.f_col0-modes.f_col7   0.3030   0.041451   1.7911   0.0%  marginal
+  modes.f_col7-modes.f_col13   0.2990   0.058965   1.7976  33.3%  marginal
+  modes.f_col8-modes.f_col10   0.2957   0.079288   1.7772  33.3%  marginal
+  modes.f_col10-modes.f_col11   0.2921   0.063682   1.7720  33.3%  marginal
+  modes.f_col10-modes.f_col12   0.2822   0.047618   1.7865  33.3%  marginal
+  modes.f_col0-modes.f_col10   0.2787   0.063425   1.7988  33.3%  marginal
+  modes.f_col8-modes.f_col13   0.2775   0.065576   1.7804  33.3%  marginal
+  modes.f_col7-modes.f_col12   0.2703   0.043218   1.8062  33.3%  marginal
+  modes.f_col3-modes.f_col10   0.2684   0.072618   1.7959  33.3%  marginal
+  modes.f_col4-modes.f_col5   0.2529   0.026914   1.8520   0.0%  marginal
+  modes.f_col10-modes.f_col13   0.2487   0.063197   1.8069  33.3%  marginal
+  modes.f_col6-modes.f_col13   0.2362   0.041115   1.8635  33.3%  marginal
+  modes.f_col2-modes.f_col10   0.2338   0.024741   1.8566  33.3%  marginal
+  modes.f_col7-modes.f_col10   0.2232   0.056047   1.8517  33.3%  marginal
+  modes.f_col1-modes.f_col2   0.2223   0.022372   1.8854   0.0%  marginal
+  modes.f_col1-modes.f_col4   0.2219   0.023465   1.8845   0.0%  marginal
+  modes.f_col6-modes.f_col9   0.2216   0.023222   1.8820  66.7%  marginal
+  modes.f_col6-modes.f_col11   0.2086   0.022386   1.8897  66.7%  marginal
+  modes.f_col2-modes.f_col4   0.2080   0.016734   1.8946   0.0%  marginal
+  modes.f_col5-modes.f_col6   0.2042   0.034695   1.8787 100.0%  marginal
+  modes.f_col0-modes.f_col4   0.1931   0.016547   1.9040  66.7%  degraded
+  modes.f_col4-modes.f_col8   0.1885   0.021216   1.9023  33.3%  degraded
+  modes.f_col4-modes.f_col6   0.1862   0.020681   1.9116   0.0%  degraded
+  modes.f_col2-modes.f_col5   0.1788   0.028395   1.9154   0.0%  degraded
+  modes.f_col2-modes.f_col12   0.1739   0.030888   1.9164   0.0%  degraded
+  modes.f_col4-modes.f_col12   0.1697   0.022197   1.9165   0.0%  degraded
+  modes.f_col2-modes.f_col7   0.1694   0.015555   1.9192  66.7%  degraded
+  modes.f_col4-modes.f_col13   0.1690   0.018105   1.9219   0.0%  degraded
+  modes.f_col6-modes.f_col10   0.1686   0.019708   1.9194  33.3%  degraded
+  modes.f_col2-modes.f_col3   0.1640   0.020451   1.9189  33.3%  degraded
+  modes.f_col4-modes.f_col11   0.1602   0.019255   1.9355   0.0%  degraded
+  modes.f_col0-modes.f_col2   0.1602   0.023347   1.9315   0.0%  degraded
+  modes.f_col4-modes.f_col9   0.1590   0.017253   1.9315  33.3%  degraded
+  modes.f_col2-modes.f_col13   0.1581   0.022874   1.9277   0.0%  degraded
+  modes.f_col3-modes.f_col4   0.1556   0.019102   1.9291  33.3%  degraded
+  modes.f_col2-modes.f_col11   0.1505   0.025372   1.9331  33.3%  degraded
+  modes.f_col4-modes.f_col10   0.1467   0.013175   1.9463  33.3%  degraded
+  modes.f_col2-modes.f_col8   0.1412   0.022659   1.9463   0.0%  degraded
+  modes.f_col6-modes.f_col7   0.1366   0.015130   1.9397  66.7%  degraded
+  modes.f_col2-modes.f_col9   0.1231   0.017745   1.9516   0.0%  degraded
+  modes.f_col4-modes.f_col7   0.1230   0.013848   1.9515  33.3%  degraded
+  modes.f_col2-modes.f_col6   0.0855   0.007009   1.9788   0.0%  degraded
+
+  -- Data quality --
+  !  11196 row(s) with NaN/Inf removed (132 remain). For gaps (e.g. market close), consider forward-filling first.
+
+  Experimental. Not financial, medical, or engineering advice.
+==============================================================

@@ -114,27 +114,38 @@ def _run_shm(result, args, run_label):
 
 
 def _run_finance(result, args, run_label):
-    from sfe.analysis.finance import slice_window, detect_regime
+    from sfe.analysis.finance import run_crisis_analysis, finance_figures
 
-    extra = {}
+    crisis = None
+    regime = None
 
     if args.crash_start and args.crash_end:
         try:
-            crash   = slice_window(result, args.crash_start, args.crash_end)
-            verdict = detect_regime(result, crash)
-            print(f"\n{verdict}")
-            extra["crash_window"]    = f"{args.crash_start} → {args.crash_end}"
-            extra["regime"]          = verdict.label
-            extra["band_gap_full"]   = f"{result.band_gap:.3f}×"
-            extra["band_gap_crash"]  = f"{crash.band_gap:.3f}×"
-            extra["bandgap_ratio"]   = f"{verdict.bandgap_ratio:.3f}×"
+            result, crisis, regime = run_crisis_analysis(
+                result, args.crash_start, args.crash_end,
+            )
         except Exception as e:
             print(f"  ⚠  Crisis window analysis skipped: {e}")
+
+    figs     = finance_figures(result, crisis=crisis, regime=regime,
+                               title_prefix=run_label)
+    std_keys = {"phase_portrait", "timeseries", "eigenspectrum"}
+    extra_figs = {k: v for k, v in figs.items() if k not in std_keys}
+
+    extra = {}
+    if regime is not None:
+        extra["crash_window"]   = f"{args.crash_start} → {args.crash_end}"
+        extra["regime"]         = regime.label
+        extra["band_gap_full"]  = f"{result.band_gap:.3f}×"
+        extra["band_gap_crash"] = f"{crisis.band_gap:.3f}×"
+        extra["bandgap_ratio"]  = f"{regime.bandgap_ratio:.3f}×"
 
     out_dir = save_run(
         result,
         domain="finance",
         label=run_label,
+        figures=list(extra_figs.values()),
+        figure_names=list(extra_figs.keys()),
         extra=extra or None,
         root=args.out,
     )

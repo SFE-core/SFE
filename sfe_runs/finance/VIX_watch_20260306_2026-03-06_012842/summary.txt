@@ -1,0 +1,45 @@
+==============================================================
+  SFE RUN SUMMARY
+==============================================================
+  Run folder  : VIX_watch_20260306_2026-03-06_012842
+  Timestamp   : 2026-03-06T01:28:42
+
+  N (observers)     : 6
+  T (timesteps)     : 544
+  W (window)        : 20
+  Pairs total       : 15
+  Reliable (rho*>0.45) : 1
+  Flagged NS>40%    : 4
+
+  rho* mean         : 0.3116
+  rho* max          : 0.7365
+  drho mean         : 0.021709
+  r_eff joint mean  : 3.8561
+  r_eff corrected   : 3.3937   [f(N)=-0.106*ln(N)+1.070, N=6]
+  band gap lam1/lam2: 2.410x   [Branch A fires if crisis/bg >= 1.50x]
+
+  -- Pairs --
+  Pair                          rho*       drho    r_eff    NS%  Zone
+  --------------------------------------------------------
+  GS-JPM                      0.7365   0.008762   1.3021  36.0%  reliable
+  AAPL-MSFT                   0.3799   0.015767   1.7051  44.0%  marginal
+  GS-MSFT                     0.3589   0.021801   1.7354  20.0%  marginal
+  JPM-MSFT                    0.3338   0.024569   1.7577  36.0%  marginal
+  AAPL-GS                     0.3322   0.021469   1.7633  40.0%  marginal
+  JPM-XOM                     0.3238   0.027208   1.7730  40.0%  marginal
+  GS-XOM                      0.2932   0.024900   1.8000  56.0%  marginal
+  AAPL-JPM                    0.2893   0.021018   1.8007  44.0%  marginal
+  LMT-MSFT                    0.2468   0.022433   1.8526  20.0%  marginal
+  GS-LMT                      0.2380   0.019902   1.8626  36.0%  marginal
+  LMT-XOM                     0.2334   0.019925   1.8569  16.0%  marginal
+  JPM-LMT                     0.2325   0.024070   1.8623  48.0%  marginal
+  AAPL-XOM                    0.2269   0.020430   1.8636  36.0%  marginal
+  AAPL-LMT                    0.2260   0.027603   1.8654  20.0%  marginal
+  MSFT-XOM                    0.2220   0.025779   1.8688  40.0%  marginal
+
+  -- Domain metadata --
+  note                   : Cross-sector snapshot — tech/defense/energy/finance
+  VIX                    : 23.75 +12.29% on Iran strike news
+
+  Experimental. Not financial, medical, or engineering advice.
+==============================================================

@@ -1,0 +1,44 @@
+==============================================================
+  SFE RUN SUMMARY
+==============================================================
+  Run folder  : dotcom_calibration_2026-03-06_021400
+  Timestamp   : 2026-03-06T02:14:00
+
+  N (observers)     : 6
+  T (timesteps)     : 750
+  W (window)        : 20
+  Pairs total       : 15
+  Reliable (rho*>0.45) : 10
+  Flagged NS>40%    : 4
+
+  rho* mean         : 0.5006
+  rho* max          : 0.6758
+  drho mean         : 0.014872
+  r_eff joint mean  : 3.1472
+  r_eff corrected   : 2.7698   [f(N)=-0.106*ln(N)+1.070, N=6]
+  band gap lam1/lam2: 2.796x   [Branch A fires if crisis/bg >= 1.50x]
+
+  -- Pairs --
+  Pair                          rho*       drho    r_eff    NS%  Zone
+  --------------------------------------------------------
+  CSCO-INTC                   0.6758   0.008688   1.3756  45.7%  reliable
+  INTC-MSFT                   0.6144   0.012057   1.4457  37.1%  reliable
+  CSCO-ORCL                   0.6117   0.018696   1.4530  51.4%  reliable
+  AAPL-INTC                   0.6072   0.009825   1.4602  34.3%  reliable
+  CSCO-MSFT                   0.5703   0.011496   1.4984  48.6%  reliable
+  INTC-ORCL                   0.5446   0.016818   1.5256  51.4%  reliable
+  AAPL-CSCO                   0.5381   0.012323   1.5449  28.6%  reliable
+  MSFT-ORCL                   0.5233   0.016037   1.5529  37.1%  reliable
+  AAPL-MSFT                   0.5093   0.014229   1.5748  40.0%  reliable
+  AAPL-ORCL                   0.4568   0.018059   1.6305  34.3%  reliable
+  AMZN-CSCO                   0.4248   0.014537   1.6673  40.0%  marginal
+  AMZN-INTC                   0.4012   0.018495   1.6976  34.3%  marginal
+  AMZN-MSFT                   0.3781   0.016504   1.7168  40.0%  marginal
+  AMZN-ORCL                   0.3464   0.020098   1.7537  37.1%  marginal
+  AAPL-AMZN                   0.3076   0.015214   1.7935  14.3%  marginal
+
+  -- Domain metadata --
+  note                   : Dotcom crash calibration — gradual correction baseline
+
+  Experimental. Not financial, medical, or engineering advice.
+==============================================================

@@ -1,0 +1,14 @@
+SFE DATA QUALITY REPORT
+----------------------------------------
+original_shape  : (11328, 14)
+cleaned_shape   : (132, 14)
+rows_dropped    : 11196
+cols_dropped    : []
+inf_replaced    : 0
+nan_count       : 61042
+
+warnings:
+  - 11196 row(s) with NaN/Inf removed (132 remain). For gaps (e.g. market close), consider forward-filling first.
+
+errors:
+  (none)

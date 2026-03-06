@@ -1,233 +1,149 @@
 # -*- coding: utf-8 -*-
 """
-sfe/analysis/finance.py — Analysis helpers for finance domain SFEResults.
+sfe/analysis/finance.py — Finance domain analysis helpers.
 
-Connectors produce SFEResults. This module operates on them.
+Responsibilities
+----------------
+- run_crisis_analysis()  : full pipeline — background + slice + detect + figures
+- finance_figures()      : standard figures + crisis overlay if crisis attached
+- print_regime()         : console summary of a RegimeResult
 
-    from sfe.analysis.finance import slice_window, detect_regime, RegimeResult
+What this module does NOT do
+-----------------------------
+- Phase portrait logic   → figures.phase_portrait() / crisis_overlay()
+- Regime thresholds      → regimes.CRISIS_THRESHOLDS
+- Domain routing         → result.domain (set by connector)
+- Data loading           → connectors/finance.py
+
+The finance connector sets result.domain = "finance" and result.crisis.
+Everything downstream reads those fields.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import numpy as np
-from ..connect import SFEResult
 
+from ..connect import SFEResult
+from ..connectors.finance import (
+    slice_window, detect_regime, RegimeResult,
+    TICKERS_COVID, TICKERS_2008, TICKERS_DOTCOM,
+)
 
 __all__ = [
-    "slice_window",
-    "detect_regime",
-    "RegimeResult",
-    "REGIME_THRESHOLDS",
+    "run_crisis_analysis",
+    "finance_figures",
+    "print_regime",
 ]
 
 
-from .regimes import CRISIS_THRESHOLDS as REGIME_THRESHOLDS
+# ---------------------------------------------------------------------------
+# Console printer
+# ---------------------------------------------------------------------------
 
-
-@dataclass
-class RegimeResult:
-    """
-    Returned by detect_regime().
-
-    Attributes
-    ----------
-    label               : str
-    branch              : str   "A" | "B" | "none" | "silent"
-    fired               : bool
-    delta_rho           : float
-    delta_reff          : float
-    bandgap_ratio       : float
-    pairs_elevated_pct  : float
-    drho_elevated_pct   : float
-    notes               : list of str
-    """
-    label               : str
-    branch              : str
-    fired               : bool
-    delta_rho           : float
-    delta_reff          : float
-    bandgap_ratio       : float
-    pairs_elevated_pct  : float
-    drho_elevated_pct   : float
-    notes               : list
-
-    def __str__(self):
-        lines = [
-            f"Regime: {self.label}",
-            f"  Branch        : {self.branch}",
-            f"  Δρ* mean      : {self.delta_rho:+.4f}  "
-            f"(threshold ≥+{REGIME_THRESHOLDS['rho_delta_min']:.2f})",
-            f"  Δr_eff corr   : {self.delta_reff:+.4f}  "
-            f"(threshold ≤{REGIME_THRESHOLDS['reff_delta_max']:+.2f})",
-            f"  Band gap ratio: {self.bandgap_ratio:.3f}×  "
-            f"(Branch A threshold ≥{REGIME_THRESHOLDS['bandgap_mult_min']:.2f}×)",
-            f"  Pairs ρ* ↑    : {self.pairs_elevated_pct:.0f}%",
-            f"  Pairs dρ ↑    : {self.drho_elevated_pct:.0f}%",
-        ]
-        for note in self.notes:
-            lines.append(f"  Note: {note}")
-        return "\n".join(lines)
+def print_regime(regime: RegimeResult) -> None:
+    print()
+    print("=" * 62)
+    print("  REGIME DETECTION RESULT")
+    print("=" * 62)
+    print(str(regime))
+    print("=" * 62)
+    print()
 
 
 # ---------------------------------------------------------------------------
-# Window slicer
+# Full pipeline convenience wrapper
 # ---------------------------------------------------------------------------
 
-def slice_window(
-    result: SFEResult,
-    start: str,
-    end: str,
+def run_crisis_analysis(
+    background: SFEResult,
+    crisis_start: str,
+    crisis_end: str,
     W: int | None = None,
-) -> SFEResult:
+    verbose: bool = True,
+) -> tuple[SFEResult, SFEResult, RegimeResult]:
     """
-    Re-run SFE on a date-bounded window of a finance SFEResult.
-
-    The result must have been produced by a finance connector
-    (i.e. it has a .dates attribute).
+    Slice a crisis window, detect the regime, attach results.
 
     Parameters
     ----------
-    result : SFEResult
-    start  : str         "YYYY-MM-DD"
-    end    : str         "YYYY-MM-DD"
-    W      : int, opt    override window size (default: same as original)
+    background   : SFEResult   full-period result (from finance connector)
+    crisis_start : str         "YYYY-MM-DD"
+    crisis_end   : str         "YYYY-MM-DD"
+    W            : int, opt    override window (default: same as background)
+    verbose      : bool
 
     Returns
     -------
-    SFEResult for the sliced window with .dates set.
+    (background, crisis, regime)
+        background.crisis is set to the crisis SFEResult.
+        crisis.domain     is set to "finance".
+
+    Example
+    -------
+    from sfe.connectors.finance import from_yfinance, TICKERS_COVID
+    from sfe.analysis.finance import run_crisis_analysis, print_regime
+
+    bg = from_yfinance(TICKERS_COVID, "2019-01-01", "2021-01-01", W=20)
+    bg, crash, regime = run_crisis_analysis(bg, "2020-02-01", "2020-04-30")
+    print_regime(regime)
     """
-    import pandas as _pd
-    from ..connect import from_dataframe
+    crisis = slice_window(background, crisis_start, crisis_end, W=W)
+    regime = detect_regime(background, crisis)
 
-    if not hasattr(result, "dates"):
-        raise AttributeError(
-            "result.dates not found. Use a finance connector "
-            "(from_yfinance / from_price_csv / from_price_dataframe)."
-        )
+    # Attach to background so figures can read it
+    background.crisis = crisis
 
-    mask  = (result.dates >= start) & (result.dates <= end)
-    dates = result.dates[mask]
+    if verbose:
+        print_regime(regime)
 
-    if mask.sum() == 0:
-        raise ValueError(f"No data in window {start} → {end}.")
-
-    W_use       = W if W is not None else result.W
-    data_window = result.data[mask.values]
-    df_window   = _pd.DataFrame(data_window, columns=result.labels, index=dates)
-
-    sub       = from_dataframe(df_window, W=W_use)
-    sub.dates = dates
-    return sub
+    return background, crisis, regime
 
 
 # ---------------------------------------------------------------------------
-# Regime detector — Proposition 12 (SFE-11)
+# Finance figures
 # ---------------------------------------------------------------------------
 
-def detect_regime(
+def finance_figures(
     background: SFEResult,
-    crisis: SFEResult,
-) -> RegimeResult:
+    crisis: SFEResult | None = None,
+    regime: RegimeResult | None = None,
+    title_prefix: str = "",
+) -> dict:
     """
-    Classify the crisis window against Proposition 12 Branch A / Branch B.
+    Generate all figures for a finance domain result.
 
-    Branch A (acute homogeneous crisis — e.g. COVID crash):
-        ρ* > background + 0.10  AND  band gap ≥ 1.50×  AND  r_eff_corr < background − 0.10
+    Standard figures (phase portrait, timeseries, eigenspectrum) come from
+    figures.all_figures(background).
 
-    Branch B (acute heterogeneous contagion — e.g. 2008 Lehman):
-        ρ* rises on > 50% of pairs  AND  dρ rises on > 50%  AND  r_eff_corr < background − 0.10
-        Band gap does NOT explode — variance diffuses across modes.
+    If crisis is provided (or attached as background.crisis), also generates:
+        crisis_overlay  — background vs crisis phase portrait, side by side,
+                          with Branch A/B verdict stamped on
 
-    Silent on gradual corrections (e.g. dot-com 2000-02).
+    Parameters
+    ----------
+    background   : SFEResult   full-period result
+    crisis       : SFEResult   crisis window (or None)
+    regime       : RegimeResult (or None — re-detected if crisis provided)
+    title_prefix : str
+
+    Returns
+    -------
+    dict with keys: "phase_portrait", "timeseries", "eigenspectrum",
+                    "crisis_overlay" (if crisis available)
     """
-    thr   = REGIME_THRESHOLDS
-    notes = []
+    from ..figures import all_figures, crisis_overlay
 
-    bg_pairs      = {p["label"]: p for p in background.pairs}
-    cr_pairs      = {p["label"]: p for p in crisis.pairs}
-    shared_labels = [l for l in bg_pairs if l in cr_pairs]
+    pfx    = title_prefix or "Finance"
+    crisis = crisis or getattr(background, "crisis", None)
 
-    if not shared_labels:
-        return RegimeResult(
-            label="NO SHARED PAIRS — cannot assess",
-            branch="none", fired=False,
-            delta_rho=float("nan"), delta_reff=float("nan"),
-            bandgap_ratio=float("nan"),
-            pairs_elevated_pct=float("nan"),
-            drho_elevated_pct=float("nan"),
-            notes=["background and crisis results have no overlapping pair labels"],
+    figs = all_figures(background, title_prefix=pfx)
+
+    if crisis is not None:
+        if regime is None:
+            regime = detect_regime(background, crisis)
+        figs["crisis_overlay"] = crisis_overlay(
+            background, crisis, regime,
+            title_prefix=pfx,
         )
 
-    delta_rhos  = [cr_pairs[l]["rho_star"]  - bg_pairs[l]["rho_star"]  for l in shared_labels]
-    delta_drhos = [cr_pairs[l]["drho_mean"] - bg_pairs[l]["drho_mean"] for l in shared_labels]
-
-    mean_delta_rho = float(np.mean(delta_rhos))
-    pairs_rho_up   = float(np.mean([d > 0 for d in delta_rhos]))  * 100
-    pairs_drho_up  = float(np.mean([d > 0 for d in delta_drhos])) * 100
-
-    delta_reff    = crisis.reff_corr - background.reff_corr
-    bandgap_ratio = (crisis.band_gap / background.band_gap
-                     if background.band_gap > 1e-9 else float("nan"))
-
-    # Branch A
-    branch_a_rho  = mean_delta_rho  >= thr["rho_delta_min"]
-    branch_a_bg   = (not np.isnan(bandgap_ratio) and
-                     bandgap_ratio  >= thr["bandgap_mult_min"])
-    branch_a_reff = delta_reff      <= thr["reff_delta_max"]
-
-    if branch_a_rho and branch_a_bg and branch_a_reff:
-        notes.append(
-            f"Band gap explosion ({background.band_gap:.2f}× → {crisis.band_gap:.2f}× "
-            f"= {bandgap_ratio:.2f}× ratio) is the distinguishing signature."
-        )
-        return RegimeResult(
-            label="CRISIS COUPLING — Branch A ✓  (acute homogeneous shock)",
-            branch="A", fired=True,
-            delta_rho=mean_delta_rho, delta_reff=delta_reff,
-            bandgap_ratio=bandgap_ratio,
-            pairs_elevated_pct=pairs_rho_up,
-            drho_elevated_pct=pairs_drho_up,
-            notes=notes,
-        )
-
-    # Branch B
-    branch_b_rho  = pairs_rho_up  > thr["pairs_pct_min"] * 100
-    branch_b_drho = pairs_drho_up > thr["pairs_pct_min"] * 100
-    branch_b_reff = delta_reff    <= thr["reff_delta_max"]
-
-    if branch_b_rho and branch_b_drho and branch_b_reff:
-        notes.append(
-            f"Band gap stable ({bandgap_ratio:.2f}×) — variance diffused across modes."
-        )
-        return RegimeResult(
-            label="CRISIS COUPLING — Branch B ✓  (heterogeneous contagion)",
-            branch="B", fired=True,
-            delta_rho=mean_delta_rho, delta_reff=delta_reff,
-            bandgap_ratio=bandgap_ratio,
-            pairs_elevated_pct=pairs_rho_up,
-            drho_elevated_pct=pairs_drho_up,
-            notes=notes,
-        )
-
-    # Silent
-    if mean_delta_rho < thr["rho_delta_min"]:
-        notes.append(
-            f"ρ* elevation ({mean_delta_rho:+.4f}) below threshold — "
-            f"consistent with gradual correction or stable background coupling."
-        )
-    elif not branch_b_reff:
-        notes.append(
-            f"r_eff collapse ({delta_reff:+.4f}) did not reach threshold "
-            f"({thr['reff_delta_max']:+.2f})."
-        )
-
-    return RegimeResult(
-        label="SILENT — no crisis coupling detected",
-        branch="silent", fired=False,
-        delta_rho=mean_delta_rho, delta_reff=delta_reff,
-        bandgap_ratio=bandgap_ratio if not np.isnan(bandgap_ratio) else float("nan"),
-        pairs_elevated_pct=pairs_rho_up,
-        drho_elevated_pct=pairs_drho_up,
-        notes=notes,
-    )
+    return figs

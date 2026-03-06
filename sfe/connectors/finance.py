@@ -399,8 +399,9 @@ def from_price_dataframe(prices, W: int = 20) -> SFEResult:
 
     result = from_dataframe(returns, W=W)
 
-    # Attach the date index so callers can use slice_window
-    result.dates = dates
+    result.domain     = "finance"
+    result.timestamps = dates   # pandas DatetimeIndex — readable by slice_window
+    result.crisis     = None    # set by run_crisis_analysis() if used
     return result
 
 
@@ -439,14 +440,14 @@ def slice_window(
     """
     import pandas as _pd
 
-    if not hasattr(result, "dates"):
+    if not hasattr(result, "timestamps") or result.timestamps is None:
         raise AttributeError(
-            "result.dates not found. Use a finance connector "
+            "result.timestamps not found. Use a finance connector "
             "(from_yfinance / from_price_csv / from_price_dataframe)."
         )
 
-    mask  = (result.dates >= start) & (result.dates <= end)
-    dates = result.dates[mask]
+    mask  = (result.timestamps >= start) & (result.timestamps <= end)
+    dates = result.timestamps[mask]
 
     if mask.sum() == 0:
         raise ValueError(f"No data in window {start} → {end}.")
@@ -454,7 +455,7 @@ def slice_window(
     W_use = W if W is not None else result.W
 
     # result.data is already log-returns (cleaned)
-    data_window = result.data[mask.values]
+    data_window = result.data[np.asarray(mask)]
 
     df_window = _pd.DataFrame(
         data_window,
@@ -463,5 +464,7 @@ def slice_window(
     )
 
     sub = from_dataframe(df_window, W=W_use)
-    sub.dates = dates
+    sub.domain     = "finance"
+    sub.timestamps = dates
+    sub.crisis     = None
     return sub

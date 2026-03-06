@@ -36,8 +36,9 @@ The finite-sample correction f(N) = −0.106·ln(N) + 1.070 is valid for N=2–1
 
 ## Project status
 
-**Phase 0 — Strain connector complete. Finance in progress.**
-
+**Phase 0**
+Strain connector complete. 
+Finance in calibrating (mapping all domains).
 ---
 
 ## Connector status

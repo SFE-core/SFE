@@ -153,12 +153,14 @@ class SFEResult:
     labels              list of str    Column labels after cleaning.
     data                ndarray        Cleaned data passed to core, shape (T, N).
     quality             DataQualityReport
+    domain              str or None    Set by connectors (e.g. "strain"). Never set by core.
     """
     __slots__ = ("pairs", "reff_joint", "band_gap", "reff_corr",
                  "reff_corr_fallback",
                  "W", "N", "T", "labels", "data", "quality",
-                 # domain-specific metadata (set by connectors, None by default)
-                 "sfreq", "timestamps", "devices", "pair_groups")
+                 "domain",
+                 "sfreq", "timestamps", "devices", "pair_groups",
+                 "crisis")
 
     def __init__(self, pairs, reff_joint_series, band_gap_val,
                  reff_corr_val, reff_corr_fallback,
@@ -174,11 +176,12 @@ class SFEResult:
         self.labels             = labels
         self.data               = data
         self.quality            = quality
-        # domain metadata — populated by connectors
+        self.domain             = None   # set by connectors, never by core
         self.sfreq              = None
         self.timestamps         = None
         self.devices            = None
         self.pair_groups        = None
+        self.crisis             = None   # set by finance connector after slice_window
 
     def reliable(self):
         """Pairs in the reliable zone (ρ* > 0.45)."""

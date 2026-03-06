@@ -225,6 +225,28 @@ def load_mat_array(
     else:
         labels = [f"{key}_col{c}" for c in range(data.shape[1])]
 
+    # Try to extract mode labels from labels_m field (KW51 struct pattern)
+    try:
+        import scipy.io as sio
+        mat = sio.loadmat(str(path), struct_as_record=False)
+        top_key = key.split(".")[0]
+        val = mat.get(top_key)
+        if val is not None and hasattr(val, "shape") and val.shape == (1, 1):
+            struct = val[0, 0]
+            if hasattr(struct, "labels_m"):
+                raw = struct.labels_m
+                extracted = []
+                for item in raw.ravel():
+                    arr = np.asarray(item).ravel()
+                    if arr.size > 0:
+                        extracted.append(str(arr[0]))
+                if len(extracted) == data.shape[1]:
+                    labels = extracted
+                    if verbose:
+                        print(f"  Mode labels from labels_m: {labels}")
+    except Exception:
+        pass  # fallback to generic labels silently
+
     # Timestamps
     timestamps = None
     if timestamps_key is not None:
@@ -247,7 +269,7 @@ def load_mat_array(
 
 def _load_key(path: str, key: str, fmt: str) -> Any:
     """Load a single key from a .mat file, handling struct fields and HDF5."""
-    # Handle nested key (e.g. "trackedmodes.fn")
+    # Handle nested key (e.g. "modes.f")
     parts = key.split(".", 1)
     top_key = parts[0]
     sub_key = parts[1] if len(parts) > 1 else None
@@ -262,7 +284,8 @@ def _load_key(path: str, key: str, fmt: str) -> Any:
         return data
     else:
         import scipy.io as sio
-        mat = sio.loadmat(path, squeeze_me=True, struct_as_record=False)
+        # Do NOT use squeeze_me — it mangles (1,1) struct arrays
+        mat = sio.loadmat(path, struct_as_record=False)
 
         if top_key not in mat:
             raise KeyError(
@@ -271,7 +294,12 @@ def _load_key(path: str, key: str, fmt: str) -> Any:
             )
         val = mat[top_key]
 
-        # MATLAB struct — access field
+        # Unwrap MATLAB struct stored as (1,1) object array — standard MATLAB pattern
+        # e.g. modes[0,0].f gives the (T, n_modes) frequency matrix
+        if hasattr(val, "shape") and val.shape == (1, 1) and hasattr(val[0, 0], "_fieldnames"):
+            val = val[0, 0]
+
+        # MATLAB struct — access named field
         if sub_key:
             if not hasattr(val, sub_key):
                 fields = [f for f in dir(val) if not f.startswith("_")]
@@ -279,9 +307,9 @@ def _load_key(path: str, key: str, fmt: str) -> Any:
                     f"Struct '{top_key}' has no field '{sub_key}'. "
                     f"Fields: {fields}"
                 )
-            val = getattr(val, sub_key)
+            return getattr(val, sub_key)
 
-        # If it's a struct, try to extract numeric fields automatically
+        # No subkey but it's a struct — try to extract numeric fields automatically
         if hasattr(val, "_fieldnames"):
             return _struct_to_array(val)
 
@@ -445,12 +473,11 @@ def from_mat(
 
     result = from_array(data, W=W, labels=col_labels)
 
-    # Attach metadata — same pattern as other connectors
+    # Domain and metadata
+    result.domain     = "shm"
     result.timestamps = timestamps
-    result.mat_key    = key
-    result.mat_path   = str(Path(path).resolve())
 
-    # f(N) fallback reporting — same self-detection as strain connector
+    # f(N) fallback reporting
     if getattr(result, "reff_corr_fallback", False):
         print(f"\n  ⚠  f(N) over-correction detected at N={result.N}: "
               f"raw joint mean ({result.reff_corr:.4f}) used. "

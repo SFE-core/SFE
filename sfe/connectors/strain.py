@@ -284,6 +284,7 @@ def from_strain_csv(
               f"raw joint mean ({result.reff_corr:.4f}) used instead of corrected value. "
               f"See SFE-11 Open Problem 3.")
 
+    result.domain = "strain"
     _print_strain_summary(result, sep=sep)
     return result
 
